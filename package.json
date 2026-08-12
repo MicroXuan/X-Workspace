@@ -5,6 +5,7 @@
   "description": "A personal workbench with Supabase-backed data persistence.",
   "scripts": {
     "vercel-build": "node scripts/build-vercel.js",
+    "check:supabase": "node scripts/check-supabase.js",
     "start": "node scripts/server.js",
     "dev": "node scripts/server.js"
   },

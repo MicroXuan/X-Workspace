@@ -1,9 +1,12 @@
 const http = require("node:http");
+const fsSync = require("node:fs");
 const fs = require("node:fs/promises");
 const path = require("node:path");
 const { createClient } = require("@supabase/supabase-js");
 
 const rootDir = path.join(__dirname, "..");
+loadEnvFile(path.join(rootDir, ".env"));
+
 const dataDir = path.join(rootDir, "data");
 const dataFile = path.join(dataDir, "workbench-data.json");
 const port = Number(process.env.PORT || 8765);
@@ -120,6 +123,23 @@ function getSupabaseClient() {
       autoRefreshToken: false
     }
   });
+}
+
+function loadEnvFile(filePath) {
+  try {
+    const content = fsSync.readFileSync(filePath, "utf8");
+    for (const line of content.split(/\r?\n/)) {
+      const match = line.match(/^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*)\s*$/);
+      if (!match) continue;
+
+      const [, key, rawValue] = match;
+      if (process.env[key]) continue;
+
+      process.env[key] = rawValue.replace(/^["']|["']$/g, "");
+    }
+  } catch (error) {
+    if (error.code !== "ENOENT") throw error;
+  }
 }
 
 async function serveStatic(pathname, request, response) {
