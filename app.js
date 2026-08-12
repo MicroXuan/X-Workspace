@@ -171,7 +171,9 @@ function bindEvents() {
 
     if (clearButton) clearDone(clearButton.dataset.clear);
     if (deleteButton) removeItem(deleteButton.dataset.group, deleteButton.dataset.delete);
-    if (checkButton) toggleDone(checkButton.dataset.group, checkButton.dataset.check);
+    if (checkButton) {
+      toggleDone(checkButton.dataset.group, checkButton.dataset.check, checkButton);
+    }
     if (sortButton) sortLinks();
     if (randomButton) focusRandomIdea();
     if (archiveWeekButton) archiveCurrentWeek();
@@ -210,7 +212,14 @@ function addItem(rawValue) {
   showToast("已添加");
 }
 
-function toggleDone(group, id) {
+function toggleDone(group, id, trigger) {
+  const task = state[group].find((item) => item.id === id);
+  const isCompleting = task && !task.done;
+
+  if (isCompleting) {
+    launchTaskCelebration(trigger);
+  }
+
   state[group] = state[group].map((item) =>
     item.id === id ? { ...item, done: !item.done } : item
   );
@@ -554,6 +563,41 @@ async function saveStateToServerNow() {
     serverStorageAvailable = false;
     showToast("服务器数据保存失败，已暂存到浏览器");
   }
+}
+
+function launchTaskCelebration(trigger) {
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  if (!trigger) return;
+
+  const rect = trigger.getBoundingClientRect();
+  const originX = rect.left + rect.width / 2;
+  const originY = rect.top + rect.height / 2;
+  const burst = document.createElement("div");
+  const pieces = 18;
+  const colors = ["#111111", "#f7f7f7", "#d7d7d7", "#8f8f8f"];
+
+  burst.className = "confetti-burst";
+  burst.style.left = `${originX}px`;
+  burst.style.top = `${originY}px`;
+  burst.setAttribute("aria-hidden", "true");
+
+  for (let index = 0; index < pieces; index += 1) {
+    const piece = document.createElement("span");
+    const angle = (Math.PI * 2 * index) / pieces + (Math.random() - 0.5) * 0.45;
+    const distance = 44 + Math.random() * 58;
+    const size = 5 + Math.random() * 5;
+
+    piece.style.setProperty("--x", `${Math.cos(angle) * distance}px`);
+    piece.style.setProperty("--y", `${Math.sin(angle) * distance - 18}px`);
+    piece.style.setProperty("--r", `${Math.random() * 260 - 130}deg`);
+    piece.style.setProperty("--s", `${size}px`);
+    piece.style.setProperty("--delay", `${Math.random() * 80}ms`);
+    piece.style.background = colors[index % colors.length];
+    burst.appendChild(piece);
+  }
+
+  document.body.appendChild(burst);
+  window.setTimeout(() => burst.remove(), 900);
 }
 
 function createPortableData() {
