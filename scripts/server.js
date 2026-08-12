@@ -3,7 +3,7 @@ const fs = require("node:fs/promises");
 const path = require("node:path");
 const { createClient } = require("@supabase/supabase-js");
 
-const rootDir = __dirname;
+const rootDir = path.join(__dirname, "..");
 const dataDir = path.join(rootDir, "data");
 const dataFile = path.join(dataDir, "workbench-data.json");
 const port = Number(process.env.PORT || 8765);

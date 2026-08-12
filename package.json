@@ -4,8 +4,8 @@
   "private": true,
   "description": "A personal workbench with Supabase-backed data persistence.",
   "scripts": {
-    "start": "node server.js",
-    "dev": "node server.js"
+    "start": "node scripts/server.js",
+    "dev": "node scripts/server.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.112.3"
