@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "exportedAt": "2026-08-12T02:57:13.051Z",
+  "app": "Personal Workbench",
+  "data": {
+    "theme": "light",
+    "view": "links",
+    "today": [
+      {
+        "id": "seed-today-1",
+        "title": "整理今天最重要的三件事",
+        "done": false,
+        "createdAt": 1786492800000
+      }
+    ],
+    "week": [
+      {
+        "id": "seed-week-1",
+        "title": "完成个人知识库结构升级",
+        "done": false,
+        "createdAt": 1786492800000
+      }
+    ],
+    "weekHistory": [],
+    "links": [],
+    "ideas": []
+  }
+}

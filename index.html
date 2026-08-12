@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="个人工作台：每日任务、每周任务、收藏夹和灵感库。"
+    />
+    <title>Personal Workbench</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <a class="skip-link" href="#main">跳到主要内容</a>
+
+    <div class="shell">
+      <aside class="sidebar" aria-label="工作台导航">
+        <div class="brand">
+          <span class="brand-mark" aria-hidden="true">
+            <svg viewBox="0 0 24 24" role="img">
+              <path d="M5 4.8A1.8 1.8 0 0 1 6.8 3h10.4A1.8 1.8 0 0 1 19 4.8v14.4a1.8 1.8 0 0 1-1.8 1.8H6.8A1.8 1.8 0 0 1 5 19.2V4.8Z" />
+              <path d="M8.5 8h7M8.5 12h7M8.5 16H13" />
+            </svg>
+          </span>
+          <div>
+            <p>Personal</p>
+            <strong>Workbench</strong>
+          </div>
+        </div>
+
+        <nav class="nav-list" aria-label="模块">
+          <button class="nav-item is-active" type="button" data-view="today">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 2v4M16 2v4M3.5 9.5h17M5 5h14a1.5 1.5 0 0 1 1.5 1.5v12A1.5 1.5 0 0 1 19 20H5a1.5 1.5 0 0 1-1.5-1.5v-12A1.5 1.5 0 0 1 5 5Z" /></svg>
+            <span>每日任务</span>
+          </button>
+          <button class="nav-item" type="button" data-view="week">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6.5A2.5 2.5 0 0 1 6.5 4h11A2.5 2.5 0 0 1 20 6.5v11a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 17.5v-11Z" /><path d="M8 9h8M8 13h8M8 17h4" /></svg>
+            <span>每周任务</span>
+          </button>
+          <button class="nav-item" type="button" data-view="links">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10.2 13.8a4 4 0 0 0 5.7 0l2.4-2.4a4 4 0 0 0-5.7-5.7l-.9.9" /><path d="M13.8 10.2a4 4 0 0 0-5.7 0l-2.4 2.4a4 4 0 0 0 5.7 5.7l.9-.9" /></svg>
+            <span>收藏夹</span>
+          </button>
+          <button class="nav-item" type="button" data-view="ideas">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18h6M10 22h4M8.5 14.5a6 6 0 1 1 7 0c-.9.7-1.5 1.7-1.5 2.8h-4c0-1.1-.6-2.1-1.5-2.8Z" /></svg>
+            <span>灵感库</span>
+          </button>
+        </nav>
+
+        <div class="mini-panel">
+          <span class="status-dot" aria-hidden="true"></span>
+          <div>
+            <p>今日完成率</p>
+            <strong id="sidebarProgress">0%</strong>
+          </div>
+        </div>
+      </aside>
+
+      <main id="main" class="workspace">
+        <header class="topbar">
+          <section>
+            <p class="eyebrow" id="todayLabel"></p>
+            <h1 id="heroTitle">Daily Focus</h1>
+          </section>
+          <div class="top-actions">
+            <button class="icon-button" type="button" id="exportDataButton" aria-label="导出数据文件" title="导出数据文件">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12" /><path d="m7 10 5 5 5-5" /><path d="M5 21h14" /></svg>
+            </button>
+            <label class="icon-button file-button" for="importDataInput" aria-label="导入数据文件" title="导入数据文件">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21V9" /><path d="m7 14 5-5 5 5" /><path d="M5 3h14" /></svg>
+            </label>
+            <input class="file-input" id="importDataInput" type="file" accept="application/json,.json" />
+            <button class="icon-button" type="button" id="themeButton" aria-label="切换深浅色" title="切换深浅色">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 0 9 9 7 7 0 0 1-9-9Z" /></svg>
+            </button>
+            <button class="icon-button" type="button" id="resetButton" aria-label="恢复示例数据" title="恢复示例数据">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7" /><path d="M3 4v5h5" /></svg>
+            </button>
+          </div>
+        </header>
+
+        <section class="command-strip" aria-label="快速添加">
+          <div class="segmented" role="tablist" aria-label="工作分类">
+            <button class="segment is-active" type="button" data-view="today">每日</button>
+            <button class="segment" type="button" data-view="week">本周</button>
+            <button class="segment" type="button" data-view="links">收藏</button>
+            <button class="segment" type="button" data-view="ideas">灵感</button>
+          </div>
+          <form class="quick-form" id="quickForm">
+            <label class="sr-only" for="quickInput">添加内容</label>
+            <input id="quickInput" type="text" autocomplete="off" placeholder="添加一个任务、链接或灵感..." />
+            <button class="primary-button" type="submit">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
+              <span>添加</span>
+            </button>
+          </form>
+        </section>
+
+        <section class="active-summary" aria-label="当前分类摘要">
+          <article class="summary-card grid-item">
+            <p class="eyebrow" id="viewEyebrow">Today</p>
+            <h2 id="viewTitle">每日任务</h2>
+            <strong id="viewCount">0</strong>
+            <span id="viewSub">等待规划</span>
+          </article>
+          <article class="summary-card summary-note grid-item">
+            <p class="eyebrow">Workspace</p>
+            <h2 id="viewNoteTitle">专注当前工作区</h2>
+            <span id="viewNote">每个 tab 只处理一类工作。</span>
+          </article>
+        </section>
+
+        <section class="content-grid">
+          <section class="panel task-panel grid-item" data-panel="today">
+            <div class="panel-head">
+              <div>
+                <p class="eyebrow">Today</p>
+                <h2>每日任务</h2>
+              </div>
+              <button class="ghost-button" type="button" data-clear="today">清除已完成</button>
+            </div>
+            <div class="list" id="todayList"></div>
+          </section>
+
+          <section class="panel task-panel grid-item" data-panel="week">
+            <div class="panel-head">
+              <div>
+                <p class="eyebrow">This Week</p>
+                <h2>每周任务</h2>
+              </div>
+              <div class="panel-actions">
+                <button class="ghost-button" type="button" data-clear="week">清除已完成</button>
+                <button class="ghost-button strong-action" type="button" data-archive-week>归档本周</button>
+              </div>
+            </div>
+            <div class="list" id="weekList"></div>
+            <section class="history-section" aria-label="历史每周任务">
+              <div class="history-head">
+                <div>
+                  <p class="eyebrow">History</p>
+                  <h3>历史每周任务</h3>
+                </div>
+                <span id="weekHistoryCount">0 周</span>
+              </div>
+              <div class="history-list" id="weekHistoryList"></div>
+            </section>
+          </section>
+
+          <section class="panel library-panel grid-item" data-panel="links">
+            <div class="panel-head">
+              <div>
+                <p class="eyebrow">Library</p>
+                <h2>收藏夹</h2>
+              </div>
+              <button class="ghost-button" type="button" data-sort="links">按类型</button>
+            </div>
+            <div class="list compact-list" id="linksList"></div>
+          </section>
+
+          <section class="panel library-panel grid-item" data-panel="ideas">
+            <div class="panel-head">
+              <div>
+                <p class="eyebrow">Ideas</p>
+                <h2>灵感库</h2>
+              </div>
+              <button class="ghost-button" type="button" data-random-idea>随机聚焦</button>
+            </div>
+            <div class="list compact-list" id="ideasList"></div>
+          </section>
+        </section>
+      </main>
+    </div>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <script src="./app.js"></script>
+  </body>
+</html>
