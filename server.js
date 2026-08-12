@@ -1,11 +1,13 @@
 const http = require("node:http");
 const fs = require("node:fs/promises");
 const path = require("node:path");
+const { createClient } = require("@supabase/supabase-js");
 
 const rootDir = __dirname;
 const dataDir = path.join(rootDir, "data");
 const dataFile = path.join(dataDir, "workbench-data.json");
 const port = Number(process.env.PORT || 8765);
+const stateId = "main";
 
 const mimeTypes = {
   ".html": "text/html; charset=utf-8",
@@ -45,8 +47,7 @@ server.listen(port, () => {
 
 async function handleDataApi(request, response) {
   if (request.method === "GET") {
-    await ensureDataFile();
-    const data = await fs.readFile(dataFile, "utf8");
+    const data = await readPersistentData();
     response.writeHead(200, {
       "Content-Type": "application/json; charset=utf-8",
       "Cache-Control": "no-store"
@@ -64,13 +65,61 @@ async function handleDataApi(request, response) {
       return;
     }
 
-    await fs.mkdir(dataDir, { recursive: true });
-    await fs.writeFile(dataFile, `${JSON.stringify(parsed, null, 2)}\n`, "utf8");
+    await writePersistentData(parsed);
     sendJson(response, 200, { ok: true });
     return;
   }
 
   sendJson(response, 405, { error: "Method not allowed" });
+}
+
+async function readPersistentData() {
+  const supabase = getSupabaseClient();
+  if (supabase) {
+    const { data, error } = await supabase
+      .from("workspace_state")
+      .select("data")
+      .eq("id", stateId)
+      .maybeSingle();
+
+    if (error) throw error;
+    if (data && data.data) return JSON.stringify(createPortableData(data.data), null, 2);
+  }
+
+  await ensureDataFile();
+  return fs.readFile(dataFile, "utf8");
+}
+
+async function writePersistentData(parsed) {
+  const supabase = getSupabaseClient();
+  if (supabase) {
+    const { error } = await supabase
+      .from("workspace_state")
+      .upsert({
+        id: stateId,
+        data: parsed.data,
+        updated_at: new Date().toISOString()
+      });
+
+    if (error) throw error;
+    return;
+  }
+
+  await fs.mkdir(dataDir, { recursive: true });
+  await fs.writeFile(dataFile, `${JSON.stringify(parsed, null, 2)}\n`, "utf8");
+}
+
+function getSupabaseClient() {
+  const url = process.env.SUPABASE_URL;
+  const key = process.env.SUPABASE_ANON_KEY;
+
+  if (!url || !key) return null;
+  return createClient(url, key, {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false
+    }
+  });
 }
 
 async function serveStatic(pathname, request, response) {
@@ -157,6 +206,23 @@ function createEmptyPortableData() {
       weekHistory: [],
       links: [],
       ideas: []
+    }
+  };
+}
+
+function createPortableData(data) {
+  return {
+    schemaVersion: 1,
+    exportedAt: new Date().toISOString(),
+    app: "Personal Workbench",
+    data: {
+      theme: data.theme === "dark" ? "dark" : "light",
+      view: typeof data.view === "string" ? data.view : "today",
+      today: Array.isArray(data.today) ? data.today : [],
+      week: Array.isArray(data.week) ? data.week : [],
+      weekHistory: Array.isArray(data.weekHistory) ? data.weekHistory : [],
+      links: Array.isArray(data.links) ? data.links : [],
+      ideas: Array.isArray(data.ideas) ? data.ideas : []
     }
   };
 }
