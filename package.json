@@ -7,6 +7,9 @@
     "start": "node server.js",
     "dev": "node server.js"
   },
+  "dependencies": {
+    "@vercel/blob": "^2.8.0"
+  },
   "engines": {
     "node": ">=18"
   }
