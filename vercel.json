@@ -14,6 +14,10 @@
       "use": "@vercel/static"
     },
     {
+      "src": "favicon.png",
+      "use": "@vercel/static"
+    },
+    {
       "src": "api/data.js",
       "use": "@vercel/node"
     }
@@ -30,6 +34,10 @@
     {
       "src": "/app.js",
       "dest": "/app.js"
+    },
+    {
+      "src": "/favicon.png",
+      "dest": "/favicon.png"
     },
     {
       "src": "/(.*)",
