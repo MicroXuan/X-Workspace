@@ -485,9 +485,16 @@ function taskTemplate(group, item) {
   if (isEditingItem(group, item.id)) return taskEditTemplate(group, item);
 
   const overdue = group === "today" && !item.done && isBeforeToday(item.createdAt);
+  const statusClass = item.done
+    ? "is-complete"
+    : overdue
+      ? "is-overdue-task"
+      : group === "week"
+        ? "is-week-task"
+        : "is-active-task";
 
   return `
-    <article class="item">
+    <article class="item task-item task-${group} ${statusClass}">
       <button class="check ${item.done ? "is-done" : ""}" type="button" data-group="${group}" data-check="${item.id}" aria-label="${item.done ? "标记为未完成" : "标记为完成"}">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6" /></svg>
       </button>

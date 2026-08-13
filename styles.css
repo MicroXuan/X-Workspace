@@ -12,6 +12,15 @@
   --accent-soft: rgba(17, 17, 17, 0.08);
   --done: #111111;
   --danger: #a21d1d;
+  --status-green: #0f7a3b;
+  --status-green-soft: rgba(15, 122, 59, 0.1);
+  --status-green-line: rgba(15, 122, 59, 0.28);
+  --status-red: #b42318;
+  --status-red-soft: rgba(180, 35, 24, 0.1);
+  --status-red-line: rgba(180, 35, 24, 0.3);
+  --status-gray: #777a82;
+  --status-gray-soft: rgba(119, 122, 130, 0.12);
+  --status-gray-line: rgba(119, 122, 130, 0.26);
   --sidebar-bg: #18191b;
   --sidebar-text: #f8f8f8;
   --sidebar-muted: #8d8f96;
@@ -35,6 +44,15 @@
   --accent-soft: rgba(255, 255, 255, 0.1);
   --done: #fafafa;
   --danger: #ff6a6a;
+  --status-green: #7ee3a1;
+  --status-green-soft: rgba(126, 227, 161, 0.13);
+  --status-green-line: rgba(126, 227, 161, 0.3);
+  --status-red: #ff8b7f;
+  --status-red-soft: rgba(255, 139, 127, 0.13);
+  --status-red-line: rgba(255, 139, 127, 0.32);
+  --status-gray: #8e8e93;
+  --status-gray-soft: rgba(142, 142, 147, 0.14);
+  --status-gray-line: rgba(142, 142, 147, 0.28);
   --sidebar-bg: #080808;
   --sidebar-text: #fafafa;
   --sidebar-muted: #888888;
@@ -681,9 +699,12 @@ h3 {
   display: grid;
   gap: 12px;
   padding: 12px;
-  border: 1px solid var(--line);
+  border: 1px solid var(--status-gray-line);
   border-radius: var(--radius);
-  background: var(--bg-solid);
+  background:
+    linear-gradient(90deg, var(--status-gray-soft), transparent 34%),
+    var(--bg-solid);
+  color: var(--status-gray);
 }
 
 .archive-top {
@@ -695,6 +716,7 @@ h3 {
 
 .archive-title {
   margin: 0;
+  color: var(--status-gray);
   font-size: 15px;
   font-weight: 760;
 }
@@ -710,19 +732,19 @@ h3 {
   gap: 8px;
   align-items: center;
   min-height: 30px;
-  color: var(--text);
+  color: var(--status-gray);
 }
 
 .archive-task span {
   width: 8px;
   height: 8px;
-  border: 1px solid var(--line-strong);
+  border: 1px solid var(--status-gray-line);
   border-radius: 50%;
 }
 
 .archive-task.is-done span {
-  border-color: var(--text);
-  background: var(--text);
+  border-color: var(--status-gray);
+  background: var(--status-gray);
 }
 
 .archive-task p {
@@ -734,7 +756,7 @@ h3 {
 }
 
 .archive-task.is-done p {
-  color: var(--muted);
+  color: var(--status-gray);
   text-decoration: line-through;
   text-decoration-thickness: 1px;
   text-underline-offset: 3px;
@@ -751,6 +773,77 @@ h3 {
   border-radius: var(--radius);
   background: var(--bg-solid);
   animation: rise 360ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.task-item {
+  border-color: var(--status-green-line);
+  background:
+    linear-gradient(90deg, var(--status-green-soft), transparent 34%),
+    var(--bg-solid);
+}
+
+.task-item .check {
+  border-color: var(--status-green-line);
+}
+
+.task-item .item-title {
+  color: var(--status-green);
+}
+
+.task-item .tag {
+  background: var(--status-green-soft);
+  color: var(--status-green);
+}
+
+.task-today.is-complete {
+  border-color: var(--status-gray-line);
+  background:
+    linear-gradient(90deg, var(--status-gray-soft), transparent 34%),
+    var(--bg-solid);
+}
+
+.task-today.is-complete .item-title,
+.task-today.is-complete .item-meta {
+  color: var(--status-gray);
+}
+
+.task-today.is-complete .tag {
+  background: var(--status-gray-soft);
+  color: var(--status-gray);
+}
+
+.task-today.is-complete .check.is-done {
+  border-color: var(--status-gray);
+  background: var(--status-gray);
+  color: var(--bg-solid);
+}
+
+.task-today.is-overdue-task {
+  border-color: var(--status-red-line);
+  background:
+    linear-gradient(90deg, var(--status-red-soft), transparent 34%),
+    var(--bg-solid);
+}
+
+.task-today.is-overdue-task .check {
+  border-color: var(--status-red-line);
+}
+
+.task-today.is-overdue-task .item-title,
+.task-today.is-overdue-task .item-meta {
+  color: var(--status-red);
+}
+
+.task-today.is-overdue-task .tag,
+.task-today .tag.is-overdue {
+  background: var(--status-red);
+  color: var(--bg-solid);
+}
+
+.task-week .check.is-done {
+  border-color: var(--status-green);
+  background: var(--status-green);
+  color: var(--bg-solid);
 }
 
 .compact-list .item {
