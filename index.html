@@ -10,7 +10,7 @@
     <title>Personal Workbench</title>
     <link rel="icon" type="image/png" sizes="200x200" href="/favicon.png" />
     <link rel="apple-touch-icon" href="/favicon.png" />
-    <link rel="stylesheet" href="./styles.css?v=20260813-all-edit" />
+    <link rel="stylesheet" href="./styles.css?v=20260813-grid-motion" />
   </head>
   <body>
     <a class="skip-link" href="#main">跳到主要内容</a>
@@ -63,6 +63,14 @@
       </aside>
 
       <main id="main" class="workspace">
+        <div class="interactive-grid" aria-hidden="true">
+          <span style="--x: 12%; --y: 18%; --delay: 0ms"></span>
+          <span style="--x: 38%; --y: 10%; --delay: 900ms"></span>
+          <span style="--x: 70%; --y: 24%; --delay: 1600ms"></span>
+          <span style="--x: 86%; --y: 46%; --delay: 2300ms"></span>
+          <span style="--x: 24%; --y: 64%; --delay: 3100ms"></span>
+          <span style="--x: 58%; --y: 76%; --delay: 3900ms"></span>
+        </div>
         <header class="topbar">
           <section>
             <p class="eyebrow" id="todayLabel"></p>
@@ -194,6 +202,6 @@
     </div>
 
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
-    <script src="./app.js?v=20260813-all-edit"></script>
+    <script src="./app.js?v=20260813-grid-motion"></script>
   </body>
 </html>

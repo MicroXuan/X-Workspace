@@ -258,9 +258,86 @@ svg {
 }
 
 .workspace {
+  position: relative;
+  isolation: isolate;
   width: min(100%, 1360px);
   margin: 0 auto;
   padding: 24px 28px;
+}
+
+.workspace > :not(.interactive-grid) {
+  position: relative;
+  z-index: 1;
+}
+
+.interactive-grid {
+  position: fixed;
+  inset: -20vh 0 auto 236px;
+  z-index: 0;
+  height: 620px;
+  overflow: hidden;
+  pointer-events: none;
+  opacity: 0.82;
+  transform: skewY(10deg);
+  -webkit-mask-image: radial-gradient(430px circle at 50% 22%, #000 0 42%, transparent 72%);
+  mask-image: radial-gradient(430px circle at 50% 22%, #000 0 42%, transparent 72%);
+}
+
+.interactive-grid::before,
+.interactive-grid::after {
+  position: absolute;
+  inset: -80px;
+  content: "";
+}
+
+.interactive-grid::before {
+  background-image:
+    linear-gradient(to right, rgba(17, 17, 17, 0.09) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(17, 17, 17, 0.09) 1px, transparent 1px);
+  background-size: 40px 40px;
+  animation: grid-drift 18s linear infinite;
+}
+
+.interactive-grid::after {
+  background:
+    radial-gradient(circle at 50% 22%, rgba(255, 255, 255, 0.82), transparent 48%),
+    linear-gradient(180deg, rgba(244, 244, 244, 0.1), var(--bg) 76%);
+}
+
+.interactive-grid span {
+  position: absolute;
+  left: var(--x);
+  top: var(--y);
+  z-index: 1;
+  width: 40px;
+  height: 40px;
+  border: 1px solid rgba(17, 17, 17, 0.2);
+  background: rgba(17, 17, 17, 0.08);
+  opacity: 0;
+  animation: grid-square-pulse 5.8s ease-in-out var(--delay) infinite;
+}
+
+[data-theme="dark"] .interactive-grid {
+  opacity: 0.58;
+  -webkit-mask-image: radial-gradient(430px circle at 50% 22%, #000 0 38%, transparent 72%);
+  mask-image: radial-gradient(430px circle at 50% 22%, #000 0 38%, transparent 72%);
+}
+
+[data-theme="dark"] .interactive-grid::before {
+  background-image:
+    linear-gradient(to right, rgba(255, 255, 255, 0.12) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.12) 1px, transparent 1px);
+}
+
+[data-theme="dark"] .interactive-grid::after {
+  background:
+    radial-gradient(circle at 50% 22%, rgba(255, 255, 255, 0.08), transparent 48%),
+    linear-gradient(180deg, rgba(17, 17, 17, 0.08), var(--bg) 76%);
+}
+
+[data-theme="dark"] .interactive-grid span {
+  border-color: rgba(255, 255, 255, 0.24);
+  background: rgba(255, 255, 255, 0.12);
 }
 
 .topbar {
@@ -916,6 +993,29 @@ h3 {
   }
 }
 
+@keyframes grid-drift {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(40px, 40px, 0);
+  }
+}
+
+@keyframes grid-square-pulse {
+  0%,
+  68%,
+  100% {
+    opacity: 0;
+    transform: scale(0.82);
+  }
+  18%,
+  42% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .confetti-burst {
     display: none;
@@ -985,6 +1085,11 @@ h3 {
     padding: 16px;
   }
 
+  .interactive-grid {
+    inset: -16vh 0 auto 0;
+    height: 460px;
+  }
+
   .topbar,
   .command-strip,
   .quick-form,
@@ -1049,6 +1154,10 @@ h3 {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .interactive-grid {
+    display: none;
+  }
+
   *,
   *::before,
   *::after {
