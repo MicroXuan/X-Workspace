@@ -899,7 +899,7 @@ function createPortableData() {
   return {
     schemaVersion: DATA_SCHEMA_VERSION,
     exportedAt: new Date().toISOString(),
-    app: "Personal Workbench",
+    app: "小宣的个人工作台",
     data: {
       theme: state.theme,
       view: state.view,
