@@ -46,6 +46,7 @@ let state = loadState();
 let toastTimer;
 let serverStorageAvailable = false;
 let serverSaveTimer;
+let editingCreatorId = null;
 
 const els = {
   body: document.body,
@@ -56,6 +57,7 @@ const els = {
   themeButton: document.querySelector("#themeButton"),
   quickForm: document.querySelector("#quickForm"),
   quickInput: document.querySelector("#quickInput"),
+  creatorUrlInput: document.querySelector("#creatorUrlInput"),
   viewButtons: [...document.querySelectorAll("[data-view]")],
   panels: [...document.querySelectorAll("[data-panel]")],
   todayList: document.querySelector("#todayList"),
@@ -113,7 +115,7 @@ const viewMeta = {
     hero: "Creator Watch",
     eyebrow: "Creators",
     title: "关注博主",
-    placeholder: "添加博主名称或主页链接...",
+    placeholder: "添加博主名...",
     noteTitle: "只管理关注源",
     note: "按平台整理值得长期跟进的创作者，和任务、收藏、灵感分开。"
   }
@@ -150,7 +152,7 @@ async function init() {
 function bindEvents() {
   els.quickForm.addEventListener("submit", (event) => {
     event.preventDefault();
-    addItem(els.quickInput.value.trim());
+    addItem(els.quickInput.value.trim(), els.creatorUrlInput.value.trim());
   });
 
   els.exportDataButton.addEventListener("click", exportDataFile);
@@ -183,6 +185,9 @@ function bindEvents() {
   document.addEventListener("click", (event) => {
     const clearButton = event.target.closest("[data-clear]");
     const deleteButton = event.target.closest("[data-delete]");
+    const editCreatorButton = event.target.closest("[data-edit-creator]");
+    const saveCreatorButton = event.target.closest("[data-save-creator]");
+    const cancelCreatorButton = event.target.closest("[data-cancel-creator-edit]");
     const checkButton = event.target.closest("[data-check]");
     const taskHitArea = event.target.closest("[data-task-hit]");
     const sortButton = event.target.closest("[data-sort]");
@@ -192,6 +197,20 @@ function bindEvents() {
 
     if (clearButton) clearDone(clearButton.dataset.clear);
     if (deleteButton) removeItem(deleteButton.dataset.group, deleteButton.dataset.delete);
+    if (editCreatorButton) {
+      editingCreatorId = editCreatorButton.dataset.editCreator;
+      render();
+      return;
+    }
+    if (saveCreatorButton) {
+      saveCreatorEdit(saveCreatorButton.dataset.saveCreator);
+      return;
+    }
+    if (cancelCreatorButton) {
+      editingCreatorId = null;
+      render();
+      return;
+    }
     if (checkButton) {
       toggleDone(checkButton.dataset.group, checkButton.dataset.check, checkButton);
       return;
@@ -215,8 +234,13 @@ function bindEvents() {
   });
 }
 
-function addItem(rawValue) {
+function addItem(rawValue, optionalValue = "") {
   if (!rawValue) {
+    if (state.view === "creators") {
+      showToast("先填写博主名。");
+      return;
+    }
+
     showToast("先写点内容，再把它收进工作台。");
     return;
   }
@@ -238,11 +262,11 @@ function addItem(rawValue) {
   } else if (group === "ideas") {
     state.ideas.unshift({ id, title: rawValue, createdAt });
   } else if (group === "creators") {
-    const isUrl = /^https?:\/\//i.test(rawValue);
+    const url = normalizeCreatorUrl(optionalValue);
     state.creators.unshift({
       id,
-      title: isUrl ? new URL(rawValue).hostname.replace(/^www\./, "") : rawValue,
-      url: isUrl ? rawValue : "",
+      title: rawValue,
+      url,
       platform: state.creatorPlatform,
       createdAt
     });
@@ -251,6 +275,7 @@ function addItem(rawValue) {
   }
 
   els.quickInput.value = "";
+  els.creatorUrlInput.value = "";
   saveAndRender();
   showToast("已添加");
 }
@@ -329,6 +354,7 @@ function focusRandomIdea() {
 function render() {
   ensureStateShape();
   document.documentElement.dataset.theme = state.theme;
+  document.documentElement.dataset.activeView = state.view;
   renderSegments();
   renderNavigation();
   renderTasks("today", els.todayList);
@@ -354,6 +380,7 @@ function renderSegments() {
   });
 
   els.quickInput.placeholder = viewMeta[state.view].placeholder;
+  els.quickInput.setAttribute("aria-label", state.view === "creators" ? "博主名" : "添加内容");
 }
 
 function renderPlatformTabs() {
@@ -491,13 +518,15 @@ function ideaTemplate(item) {
 }
 
 function creatorTemplate(item) {
+  if (item.id === editingCreatorId) return creatorEditTemplate(item);
+
   const platform = platformMeta[item.platform] || "平台";
   const link = item.url
     ? `<a href="${escapeAttribute(item.url)}" target="_blank" rel="noreferrer">打开主页</a>`
-    : "<span>未添加主页</span>";
+    : "";
 
   return `
-    <article class="item">
+    <article class="item creator-item">
       <div class="item-main">
         <p class="item-title">${escapeHtml(item.title)}</p>
         <div class="item-meta">
@@ -506,11 +535,59 @@ function creatorTemplate(item) {
           <span>${formatTime(item.createdAt)}</span>
         </div>
       </div>
+      <button class="edit-button" type="button" data-edit-creator="${item.id}" aria-label="修改博主">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9" /><path d="m16.5 3.5 4 4L8 20H4v-4L16.5 3.5Z" /></svg>
+      </button>
       <button class="delete-button" type="button" data-group="creators" data-delete="${item.id}" aria-label="删除">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 14h10l1-14M9 7V4h6v3" /></svg>
       </button>
     </article>
   `;
+}
+
+function creatorEditTemplate(item) {
+  return `
+    <article class="item creator-edit-item">
+      <div class="creator-edit-grid" data-creator-edit-row="${item.id}">
+        <label>
+          <span>博主名</span>
+          <input type="text" data-creator-name value="${escapeAttribute(item.title)}" />
+        </label>
+        <label>
+          <span>博主主页</span>
+          <input type="text" data-creator-url value="${escapeAttribute(item.url)}" placeholder="可选" />
+        </label>
+      </div>
+      <button class="edit-button strong-edit" type="button" data-save-creator="${item.id}" aria-label="保存修改">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6" /></svg>
+      </button>
+      <button class="delete-button" type="button" data-cancel-creator-edit aria-label="取消修改">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" /></svg>
+      </button>
+    </article>
+  `;
+}
+
+function saveCreatorEdit(id) {
+  const row = [...document.querySelectorAll("[data-creator-edit-row]")].find(
+    (element) => element.dataset.creatorEditRow === id
+  );
+  if (!row) return;
+
+  const title = row.querySelector("[data-creator-name]").value.trim();
+  const url = normalizeCreatorUrl(row.querySelector("[data-creator-url]").value.trim());
+
+  if (!title) {
+    showToast("博主名不能为空。");
+    return;
+  }
+
+  state.creators = state.creators.map((item) =>
+    item.id === id ? { ...item, title, url } : item
+  );
+  editingCreatorId = null;
+  saveAndRender();
+  showToast("已更新博主");
 }
 
 function getCreatorsByPlatform(platform) {
@@ -774,10 +851,22 @@ function normalizeCreators(value) {
     .map((item) => ({
       id: typeof item.id === "string" ? item.id : uid(),
       title: item.title,
-      url: typeof item.url === "string" ? item.url : "",
+      url: normalizeCreatorUrl(typeof item.url === "string" ? item.url : ""),
       platform: platformMeta[item.platform] ? item.platform : "xiaohongshu",
       createdAt: Number.isFinite(item.createdAt) ? item.createdAt : Date.now()
     }));
+}
+
+function normalizeCreatorUrl(value) {
+  if (!value) return "";
+
+  const candidate = /^https?:\/\//i.test(value) ? value : `https://${value}`;
+
+  try {
+    return new URL(candidate).href;
+  } catch {
+    return "";
+  }
 }
 
 function normalizeWeekHistory(value) {

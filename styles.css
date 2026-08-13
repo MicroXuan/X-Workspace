@@ -405,6 +405,18 @@ h3 {
   gap: 10px;
 }
 
+.creator-url-input {
+  display: none;
+}
+
+[data-active-view="creators"] .quick-form {
+  grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.1fr) auto;
+}
+
+[data-active-view="creators"] .creator-url-input {
+  display: block;
+}
+
 .quick-form input {
   width: 100%;
   min-height: 44px;
@@ -668,6 +680,47 @@ h3 {
   grid-template-columns: minmax(0, 1fr) auto;
 }
 
+.creator-item {
+  grid-template-columns: minmax(0, 1fr) auto auto;
+}
+
+.compact-list .creator-item {
+  grid-template-columns: minmax(0, 1fr) auto auto;
+}
+
+.creator-edit-item {
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: end;
+}
+
+.compact-list .creator-edit-item {
+  grid-template-columns: minmax(0, 1fr) auto auto;
+}
+
+.creator-edit-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+  gap: 10px;
+}
+
+.creator-edit-grid label {
+  display: grid;
+  gap: 5px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.creator-edit-grid input {
+  width: 100%;
+  min-height: 40px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 0 12px;
+  background: var(--bg-solid);
+  color: var(--text);
+}
+
 .check {
   display: grid;
   width: 28px;
@@ -733,7 +786,8 @@ h3 {
   color: var(--bg-solid);
 }
 
-.delete-button {
+.delete-button,
+.edit-button {
   display: grid;
   width: 36px;
   height: 36px;
@@ -743,6 +797,17 @@ h3 {
   background: transparent;
   color: var(--muted);
   transition: background var(--speed) ease, color var(--speed) ease;
+}
+
+.edit-button:hover,
+.strong-edit {
+  background: var(--soft);
+  color: var(--text);
+}
+
+.strong-edit {
+  background: var(--text);
+  color: var(--bg-solid);
 }
 
 .delete-button:hover {
@@ -931,6 +996,11 @@ h3 {
     width: 100%;
     min-height: 40px;
     font-size: 14px;
+  }
+
+  [data-active-view="creators"] .quick-form,
+  .creator-edit-grid {
+    grid-template-columns: 1fr;
   }
 
   .summary-card {

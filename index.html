@@ -10,7 +10,7 @@
     <title>Personal Workbench</title>
     <link rel="icon" type="image/png" sizes="200x200" href="/favicon.png" />
     <link rel="apple-touch-icon" href="/favicon.png" />
-    <link rel="stylesheet" href="./styles.css?v=20260813-creators-2" />
+    <link rel="stylesheet" href="./styles.css?v=20260813-creator-edit" />
   </head>
   <body>
     <a class="skip-link" href="#main">跳到主要内容</a>
@@ -93,6 +93,8 @@
           <form class="quick-form" id="quickForm">
             <label class="sr-only" for="quickInput">添加内容</label>
             <input id="quickInput" type="text" autocomplete="off" placeholder="添加一个任务、链接或灵感..." />
+            <label class="sr-only" for="creatorUrlInput">博主主页</label>
+            <input class="creator-url-input" id="creatorUrlInput" type="text" autocomplete="off" placeholder="博主主页，可选" />
             <button class="primary-button" type="submit">
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
               <span>添加</span>
@@ -192,6 +194,6 @@
     </div>
 
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
-    <script src="./app.js?v=20260813-creators-2"></script>
+    <script src="./app.js?v=20260813-creator-edit"></script>
   </body>
 </html>
