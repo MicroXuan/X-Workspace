@@ -652,6 +652,16 @@ h3 {
   min-width: 0;
 }
 
+.task-hit-area {
+  border-radius: calc(var(--radius) - 2px);
+  cursor: pointer;
+  outline: none;
+}
+
+.task-hit-area:focus-visible {
+  box-shadow: 0 0 0 3px var(--ring);
+}
+
 .item-title {
   overflow: hidden;
   margin: 0;

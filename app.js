@@ -157,6 +157,7 @@ function bindEvents() {
     const clearButton = event.target.closest("[data-clear]");
     const deleteButton = event.target.closest("[data-delete]");
     const checkButton = event.target.closest("[data-check]");
+    const taskHitArea = event.target.closest("[data-task-hit]");
     const sortButton = event.target.closest("[data-sort]");
     const randomButton = event.target.closest("[data-random-idea]");
     const archiveWeekButton = event.target.closest("[data-archive-week]");
@@ -166,11 +167,24 @@ function bindEvents() {
     if (deleteButton) removeItem(deleteButton.dataset.group, deleteButton.dataset.delete);
     if (checkButton) {
       toggleDone(checkButton.dataset.group, checkButton.dataset.check, checkButton);
+      return;
+    }
+    if (taskHitArea) {
+      toggleDone(taskHitArea.dataset.group, taskHitArea.dataset.check, taskHitArea);
+      return;
     }
     if (sortButton) sortLinks();
     if (randomButton) focusRandomIdea();
     if (archiveWeekButton) archiveCurrentWeek();
     if (deleteWeekArchiveButton) removeWeekArchive(deleteWeekArchiveButton.dataset.deleteWeekArchive);
+  });
+
+  document.addEventListener("keydown", (event) => {
+    const taskHitArea = event.target.closest("[data-task-hit]");
+    if (!taskHitArea || (event.key !== "Enter" && event.key !== " ")) return;
+
+    event.preventDefault();
+    toggleDone(taskHitArea.dataset.group, taskHitArea.dataset.check, taskHitArea);
   });
 }
 
@@ -361,7 +375,7 @@ function taskTemplate(group, item) {
       <button class="check ${item.done ? "is-done" : ""}" type="button" data-group="${group}" data-check="${item.id}" aria-label="${item.done ? "标记为未完成" : "标记为完成"}">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6" /></svg>
       </button>
-      <div class="item-main">
+      <div class="item-main task-hit-area" data-task-hit data-group="${group}" data-check="${item.id}" role="button" tabindex="0" aria-label="${item.done ? "标记为未完成" : "标记为完成"}">
         <p class="item-title">${escapeHtml(item.title)}</p>
         <div class="item-meta">
           <span class="tag ${overdue ? "is-overdue" : ""}">${overdue ? "已延期" : item.done ? "Done" : "Open"}</span>
