@@ -122,7 +122,8 @@ const viewMeta = {
 const platformMeta = {
   xiaohongshu: "小红书",
   wechat: "公众号",
-  bilibili: "B站"
+  bilibili: "B站",
+  channels: "视频号"
 };
 
 init();
@@ -326,6 +327,7 @@ function focusRandomIdea() {
 }
 
 function render() {
+  ensureStateShape();
   document.documentElement.dataset.theme = state.theme;
   renderSegments();
   renderNavigation();
@@ -336,6 +338,12 @@ function render() {
   renderIdeas();
   renderCreators();
   renderMetrics();
+}
+
+function ensureStateShape() {
+  if (!viewMeta[state.view]) state.view = "today";
+  if (!platformMeta[state.creatorPlatform]) state.creatorPlatform = "xiaohongshu";
+  if (!Array.isArray(state.creators)) state.creators = [];
 }
 
 function renderSegments() {

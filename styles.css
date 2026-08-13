@@ -362,6 +362,7 @@ h3 {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
   min-width: 0;
+  overflow-x: auto;
   padding: 4px;
   border: 1px solid var(--line);
   border-radius: var(--radius);
@@ -505,12 +506,15 @@ h3 {
 
 .platform-tabs {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 6px;
   justify-content: flex-end;
+  overflow-x: auto;
+  white-space: nowrap;
 }
 
 .platform-tab {
+  flex: 0 0 auto;
   min-height: 36px;
   border: 1px solid var(--line);
   border-radius: var(--radius);
