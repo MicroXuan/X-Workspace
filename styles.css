@@ -231,14 +231,6 @@ svg {
   text-align: left;
 }
 
-.nav-image-icon {
-  width: 20px;
-  height: 20px;
-  border-radius: 5px;
-  background: #ffffff;
-  object-fit: cover;
-}
-
 .nav-item:hover,
 .nav-item.is-active {
   border-color: rgba(255, 255, 255, 0.08);
@@ -351,8 +343,11 @@ h3 {
 }
 
 .command-strip {
+  position: sticky;
+  top: 0;
+  z-index: 8;
   display: grid;
-  grid-template-columns: minmax(320px, 420px) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 440px) minmax(0, 1fr);
   gap: 12px;
   align-items: center;
   margin-bottom: 14px;
@@ -366,6 +361,7 @@ h3 {
 .segmented {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
+  min-width: 0;
   padding: 4px;
   border: 1px solid var(--line);
   border-radius: var(--radius);
@@ -377,6 +373,7 @@ h3 {
   padding: 0;
   background: transparent;
   color: var(--muted);
+  white-space: nowrap;
   font-weight: 650;
 }
 
@@ -928,6 +925,8 @@ h3 {
 
   .segment {
     width: 100%;
+    min-height: 40px;
+    font-size: 14px;
   }
 
   .summary-card {
