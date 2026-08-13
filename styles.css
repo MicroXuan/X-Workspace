@@ -665,7 +665,7 @@ h3 {
 
 .item {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
   gap: 10px;
   align-items: center;
   min-height: 54px;
@@ -677,7 +677,7 @@ h3 {
 }
 
 .compact-list .item {
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) auto auto;
 }
 
 .creator-item {
@@ -693,17 +693,36 @@ h3 {
   align-items: end;
 }
 
+.item-edit-row {
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: end;
+}
+
 .compact-list .creator-edit-item {
   grid-template-columns: minmax(0, 1fr) auto auto;
 }
 
-.creator-edit-grid {
+.compact-list .item-edit-row {
+  grid-template-columns: minmax(0, 1fr) auto auto;
+}
+
+.creator-edit-grid,
+.item-edit-grid {
   display: grid;
   grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
   gap: 10px;
 }
 
-.creator-edit-grid label {
+.item-edit-grid {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.two-field-edit {
+  grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+}
+
+.creator-edit-grid label,
+.item-edit-grid label {
   display: grid;
   gap: 5px;
   color: var(--muted);
@@ -711,7 +730,8 @@ h3 {
   font-weight: 700;
 }
 
-.creator-edit-grid input {
+.creator-edit-grid input,
+.item-edit-grid input {
   width: 100%;
   min-height: 40px;
   border: 1px solid var(--line);
@@ -999,7 +1019,9 @@ h3 {
   }
 
   [data-active-view="creators"] .quick-form,
-  .creator-edit-grid {
+  .creator-edit-grid,
+  .item-edit-grid,
+  .two-field-edit {
     grid-template-columns: 1fr;
   }
 

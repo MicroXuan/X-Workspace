@@ -46,6 +46,7 @@ let state = loadState();
 let toastTimer;
 let serverStorageAvailable = false;
 let serverSaveTimer;
+let editingItem = null;
 let editingCreatorId = null;
 
 const els = {
@@ -185,6 +186,9 @@ function bindEvents() {
   document.addEventListener("click", (event) => {
     const clearButton = event.target.closest("[data-clear]");
     const deleteButton = event.target.closest("[data-delete]");
+    const editItemButton = event.target.closest("[data-edit-item]");
+    const saveItemButton = event.target.closest("[data-save-item]");
+    const cancelItemButton = event.target.closest("[data-cancel-item-edit]");
     const editCreatorButton = event.target.closest("[data-edit-creator]");
     const saveCreatorButton = event.target.closest("[data-save-creator]");
     const cancelCreatorButton = event.target.closest("[data-cancel-creator-edit]");
@@ -197,6 +201,23 @@ function bindEvents() {
 
     if (clearButton) clearDone(clearButton.dataset.clear);
     if (deleteButton) removeItem(deleteButton.dataset.group, deleteButton.dataset.delete);
+    if (editItemButton) {
+      editingItem = {
+        group: editItemButton.dataset.group,
+        id: editItemButton.dataset.editItem
+      };
+      render();
+      return;
+    }
+    if (saveItemButton) {
+      saveItemEdit(saveItemButton.dataset.group, saveItemButton.dataset.saveItem);
+      return;
+    }
+    if (cancelItemButton) {
+      editingItem = null;
+      render();
+      return;
+    }
     if (editCreatorButton) {
       editingCreatorId = editCreatorButton.dataset.editCreator;
       render();
@@ -461,6 +482,8 @@ function renderWeekHistory() {
 }
 
 function taskTemplate(group, item) {
+  if (isEditingItem(group, item.id)) return taskEditTemplate(group, item);
+
   const overdue = group === "today" && !item.done && isBeforeToday(item.createdAt);
 
   return `
@@ -475,6 +498,9 @@ function taskTemplate(group, item) {
           <span>${group === "today" ? formatTaskDateTime(item.createdAt) : formatTime(item.createdAt)}</span>
         </div>
       </div>
+      <button class="edit-button" type="button" data-group="${group}" data-edit-item="${item.id}" aria-label="修改任务">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9" /><path d="m16.5 3.5 4 4L8 20H4v-4L16.5 3.5Z" /></svg>
+      </button>
       <button class="delete-button" type="button" data-group="${group}" data-delete="${item.id}" aria-label="删除">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 14h10l1-14M9 7V4h6v3" /></svg>
       </button>
@@ -483,6 +509,8 @@ function taskTemplate(group, item) {
 }
 
 function linkTemplate(item) {
+  if (isEditingItem("links", item.id)) return linkEditTemplate(item);
+
   const isExternal = item.url.startsWith("http");
   return `
     <article class="item">
@@ -493,6 +521,9 @@ function linkTemplate(item) {
           ${isExternal ? `<a href="${escapeAttribute(item.url)}" target="_blank" rel="noreferrer">打开链接</a>` : "<span>本地文件</span>"}
         </div>
       </div>
+      <button class="edit-button" type="button" data-group="links" data-edit-item="${item.id}" aria-label="修改收藏">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9" /><path d="m16.5 3.5 4 4L8 20H4v-4L16.5 3.5Z" /></svg>
+      </button>
       <button class="delete-button" type="button" data-group="links" data-delete="${item.id}" aria-label="删除">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 14h10l1-14M9 7V4h6v3" /></svg>
       </button>
@@ -501,6 +532,8 @@ function linkTemplate(item) {
 }
 
 function ideaTemplate(item) {
+  if (isEditingItem("ideas", item.id)) return simpleItemEditTemplate("ideas", item, "灵感");
+
   return `
     <article class="item">
       <div class="item-main">
@@ -510,6 +543,9 @@ function ideaTemplate(item) {
           <span>${formatTime(item.createdAt)}</span>
         </div>
       </div>
+      <button class="edit-button" type="button" data-group="ideas" data-edit-item="${item.id}" aria-label="修改灵感">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9" /><path d="m16.5 3.5 4 4L8 20H4v-4L16.5 3.5Z" /></svg>
+      </button>
       <button class="delete-button" type="button" data-group="ideas" data-delete="${item.id}" aria-label="删除">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 14h10l1-14M9 7V4h6v3" /></svg>
       </button>
@@ -545,6 +581,52 @@ function creatorTemplate(item) {
   `;
 }
 
+function taskEditTemplate(group, item) {
+  return simpleItemEditTemplate(group, item, group === "today" ? "每日任务" : "每周任务");
+}
+
+function simpleItemEditTemplate(group, item, label) {
+  return `
+    <article class="item item-edit-row">
+      <div class="item-edit-grid" data-item-edit-row="${group}:${item.id}">
+        <label>
+          <span>${label}</span>
+          <input type="text" data-item-title value="${escapeAttribute(item.title)}" />
+        </label>
+      </div>
+      <button class="edit-button strong-edit" type="button" data-group="${group}" data-save-item="${item.id}" aria-label="保存修改">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6" /></svg>
+      </button>
+      <button class="delete-button" type="button" data-cancel-item-edit aria-label="取消修改">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" /></svg>
+      </button>
+    </article>
+  `;
+}
+
+function linkEditTemplate(item) {
+  return `
+    <article class="item item-edit-row">
+      <div class="item-edit-grid two-field-edit" data-item-edit-row="links:${item.id}">
+        <label>
+          <span>名称</span>
+          <input type="text" data-item-title value="${escapeAttribute(item.title)}" />
+        </label>
+        <label>
+          <span>链接</span>
+          <input type="text" data-item-url value="${escapeAttribute(item.url.startsWith("workspace://") ? "" : item.url)}" placeholder="可选" />
+        </label>
+      </div>
+      <button class="edit-button strong-edit" type="button" data-group="links" data-save-item="${item.id}" aria-label="保存修改">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6" /></svg>
+      </button>
+      <button class="delete-button" type="button" data-cancel-item-edit aria-label="取消修改">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" /></svg>
+      </button>
+    </article>
+  `;
+}
+
 function creatorEditTemplate(item) {
   return `
     <article class="item creator-edit-item">
@@ -566,6 +648,36 @@ function creatorEditTemplate(item) {
       </button>
     </article>
   `;
+}
+
+function saveItemEdit(group, id) {
+  const row = [...document.querySelectorAll("[data-item-edit-row]")].find(
+    (element) => element.dataset.itemEditRow === `${group}:${id}`
+  );
+  if (!row) return;
+
+  const title = row.querySelector("[data-item-title]").value.trim();
+  if (!title) {
+    showToast(group === "links" ? "名称不能为空。" : "内容不能为空。");
+    return;
+  }
+
+  if (group === "links") {
+    const url = normalizeOptionalUrl(row.querySelector("[data-item-url]").value.trim());
+    state.links = state.links.map((item) =>
+      item.id === id
+        ? { ...item, title, url: url || "workspace://file", type: url ? "link" : "file" }
+        : item
+    );
+  } else {
+    state[group] = state[group].map((item) =>
+      item.id === id ? { ...item, title } : item
+    );
+  }
+
+  editingItem = null;
+  saveAndRender();
+  showToast("已更新");
 }
 
 function saveCreatorEdit(id) {
@@ -592,6 +704,10 @@ function saveCreatorEdit(id) {
 
 function getCreatorsByPlatform(platform) {
   return state.creators.filter((item) => item.platform === platform);
+}
+
+function isEditingItem(group, id) {
+  return Boolean(editingItem && editingItem.group === group && editingItem.id === id);
 }
 
 function weekArchiveTemplate(archive) {
@@ -858,6 +974,10 @@ function normalizeCreators(value) {
 }
 
 function normalizeCreatorUrl(value) {
+  return normalizeOptionalUrl(value);
+}
+
+function normalizeOptionalUrl(value) {
   if (!value) return "";
 
   const candidate = /^https?:\/\//i.test(value) ? value : `https://${value}`;
