@@ -47,6 +47,10 @@
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18h6M10 22h4M8.5 14.5a6 6 0 1 1 7 0c-.9.7-1.5 1.7-1.5 2.8h-4c0-1.1-.6-2.1-1.5-2.8Z" /></svg>
             <span>灵感库</span>
           </button>
+          <button class="nav-item" type="button" data-view="creators">
+            <img class="nav-image-icon" src="/creator-icon.png" alt="" aria-hidden="true" />
+            <span>关注博主</span>
+          </button>
         </nav>
 
         <div class="mini-panel">
@@ -84,6 +88,7 @@
             <button class="segment" type="button" data-view="week">本周</button>
             <button class="segment" type="button" data-view="links">收藏</button>
             <button class="segment" type="button" data-view="ideas">灵感</button>
+            <button class="segment" type="button" data-view="creators">博主</button>
           </div>
           <form class="quick-form" id="quickForm">
             <label class="sr-only" for="quickInput">添加内容</label>
@@ -165,6 +170,21 @@
               <button class="ghost-button" type="button" data-random-idea>随机聚焦</button>
             </div>
             <div class="list compact-list" id="ideasList"></div>
+          </section>
+
+          <section class="panel library-panel grid-item" data-panel="creators">
+            <div class="panel-head">
+              <div>
+                <p class="eyebrow">Creators</p>
+                <h2>关注博主</h2>
+              </div>
+              <div class="platform-tabs" role="tablist" aria-label="博主平台">
+                <button class="platform-tab is-active" type="button" data-platform="xiaohongshu">小红书</button>
+                <button class="platform-tab" type="button" data-platform="wechat">公众号</button>
+                <button class="platform-tab" type="button" data-platform="bilibili">B站</button>
+              </div>
+            </div>
+            <div class="list compact-list" id="creatorsList"></div>
           </section>
         </section>
       </main>

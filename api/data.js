@@ -113,11 +113,13 @@ function createPortableData(data) {
     data: {
       theme: data.theme === "dark" ? "dark" : "light",
       view: typeof data.view === "string" ? data.view : "today",
+      creatorPlatform: typeof data.creatorPlatform === "string" ? data.creatorPlatform : "xiaohongshu",
       today: Array.isArray(data.today) ? data.today : [],
       week: Array.isArray(data.week) ? data.week : [],
       weekHistory: Array.isArray(data.weekHistory) ? data.weekHistory : [],
       links: Array.isArray(data.links) ? data.links : [],
-      ideas: Array.isArray(data.ideas) ? data.ideas : []
+      ideas: Array.isArray(data.ideas) ? data.ideas : [],
+      creators: Array.isArray(data.creators) ? data.creators : []
     }
   };
 }
@@ -134,7 +136,8 @@ function isPortableData(value) {
       Array.isArray(data.week) &&
       Array.isArray(data.weekHistory) &&
       Array.isArray(data.links) &&
-      Array.isArray(data.ideas)
+      Array.isArray(data.ideas) &&
+      (!("creators" in data) || Array.isArray(data.creators))
   );
 }
 

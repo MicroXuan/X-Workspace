@@ -8,6 +8,7 @@ const sampleState = {
   theme: "light",
   addKind: "today",
   view: "today",
+  creatorPlatform: "xiaohongshu",
   today: [
     { id: uid(), title: "整理今天最重要的三件事", done: false, createdAt: Date.now() - 900000 },
     { id: uid(), title: "复盘正在推进的项目状态", done: false, createdAt: Date.now() - 600000 },
@@ -37,7 +38,8 @@ const sampleState = {
   ideas: [
     { id: uid(), title: "把重复工作做成一键式指令面板", createdAt: Date.now() - 700000 },
     { id: uid(), title: "每周自动生成一次个人进展报告", createdAt: Date.now() - 350000 }
-  ]
+  ],
+  creators: []
 };
 
 let state = loadState();
@@ -62,6 +64,8 @@ const els = {
   weekHistoryCount: document.querySelector("#weekHistoryCount"),
   linksList: document.querySelector("#linksList"),
   ideasList: document.querySelector("#ideasList"),
+  creatorsList: document.querySelector("#creatorsList"),
+  platformButtons: [...document.querySelectorAll("[data-platform]")],
   viewEyebrow: document.querySelector("#viewEyebrow"),
   viewTitle: document.querySelector("#viewTitle"),
   viewCount: document.querySelector("#viewCount"),
@@ -104,7 +108,21 @@ const viewMeta = {
     placeholder: "记录一个灵感...",
     noteTitle: "只收集想法",
     note: "未成形的念头先存起来，等它值得行动时再变成任务。"
+  },
+  creators: {
+    hero: "Creator Watch",
+    eyebrow: "Creators",
+    title: "关注博主",
+    placeholder: "添加博主名称或主页链接...",
+    noteTitle: "只管理关注源",
+    note: "按平台整理值得长期跟进的创作者，和任务、收藏、灵感分开。"
   }
+};
+
+const platformMeta = {
+  xiaohongshu: "小红书",
+  wechat: "公众号",
+  bilibili: "B站"
 };
 
 init();
@@ -142,6 +160,14 @@ function bindEvents() {
       state.view = button.dataset.view;
       state.addKind = state.view;
       window.history.replaceState(null, "", `#${state.view}`);
+      saveAndRender();
+      els.quickInput.focus();
+    });
+  });
+
+  els.platformButtons.forEach((button) => {
+    button.addEventListener("click", () => {
+      state.creatorPlatform = button.dataset.platform;
       saveAndRender();
       els.quickInput.focus();
     });
@@ -210,6 +236,15 @@ function addItem(rawValue) {
     });
   } else if (group === "ideas") {
     state.ideas.unshift({ id, title: rawValue, createdAt });
+  } else if (group === "creators") {
+    const isUrl = /^https?:\/\//i.test(rawValue);
+    state.creators.unshift({
+      id,
+      title: isUrl ? new URL(rawValue).hostname.replace(/^www\./, "") : rawValue,
+      url: isUrl ? rawValue : "",
+      platform: state.creatorPlatform,
+      createdAt
+    });
   } else {
     state[group].unshift({ id, title: rawValue, done: false, createdAt });
   }
@@ -299,6 +334,7 @@ function render() {
   renderWeekHistory();
   renderLinks();
   renderIdeas();
+  renderCreators();
   renderMetrics();
 }
 
@@ -310,6 +346,14 @@ function renderSegments() {
   });
 
   els.quickInput.placeholder = viewMeta[state.view].placeholder;
+}
+
+function renderPlatformTabs() {
+  els.platformButtons.forEach((button) => {
+    const isActive = button.dataset.platform === state.creatorPlatform;
+    button.classList.toggle("is-active", isActive);
+    button.setAttribute("aria-selected", String(isActive));
+  });
 }
 
 function renderNavigation() {
@@ -336,6 +380,18 @@ function renderIdeas() {
     : emptyTemplate("把一闪而过的想法放在这里。");
 }
 
+function renderCreators() {
+  renderPlatformTabs();
+
+  const visibleCreators = state.creators.filter(
+    (item) => item.platform === state.creatorPlatform
+  );
+
+  els.creatorsList.innerHTML = visibleCreators.length
+    ? visibleCreators.map(creatorTemplate).join("")
+    : emptyTemplate(`还没有收藏${platformMeta[state.creatorPlatform]}博主。`);
+}
+
 function renderMetrics() {
   const todayDone = state.today.filter((item) => item.done).length;
   const weekDone = state.week.filter((item) => item.done).length;
@@ -352,6 +408,8 @@ function renderMetrics() {
   els.viewCount.textContent = activeItems.length;
   els.viewSub.textContent = state.view === "week"
     ? `${activeItems.length} 个当前 / ${state.weekHistory.length} 周历史`
+    : state.view === "creators"
+    ? `${getCreatorsByPlatform(state.creatorPlatform).length} 个${platformMeta[state.creatorPlatform]}博主`
     : doneCount === null
     ? `${activeItems.length} 条已保存`
     : `${doneCount} 个已完成`;
@@ -422,6 +480,33 @@ function ideaTemplate(item) {
       </button>
     </article>
   `;
+}
+
+function creatorTemplate(item) {
+  const platform = platformMeta[item.platform] || "平台";
+  const link = item.url
+    ? `<a href="${escapeAttribute(item.url)}" target="_blank" rel="noreferrer">打开主页</a>`
+    : "<span>未添加主页</span>";
+
+  return `
+    <article class="item">
+      <div class="item-main">
+        <p class="item-title">${escapeHtml(item.title)}</p>
+        <div class="item-meta">
+          <span class="tag">${platform}</span>
+          ${link}
+          <span>${formatTime(item.createdAt)}</span>
+        </div>
+      </div>
+      <button class="delete-button" type="button" data-group="creators" data-delete="${item.id}" aria-label="删除">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 14h10l1-14M9 7V4h6v3" /></svg>
+      </button>
+    </article>
+  `;
+}
+
+function getCreatorsByPlatform(platform) {
+  return state.creators.filter((item) => item.platform === platform);
 }
 
 function weekArchiveTemplate(archive) {
@@ -617,11 +702,13 @@ function createPortableData() {
     data: {
       theme: state.theme,
       view: state.view,
+      creatorPlatform: state.creatorPlatform,
       today: state.today,
       week: state.week,
       weekHistory: state.weekHistory,
       links: state.links,
-      ideas: state.ideas
+      ideas: state.ideas,
+      creators: state.creators
     }
   };
 }
@@ -634,11 +721,13 @@ function normalizeImportedState(payload) {
     ...structuredClone(sampleState),
     theme: data.theme === "dark" ? "dark" : "light",
     view: viewMeta[data.view] ? data.view : "today",
+    creatorPlatform: platformMeta[data.creatorPlatform] ? data.creatorPlatform : "xiaohongshu",
     today: normalizeList(data.today),
     week: normalizeList(data.week),
     weekHistory: normalizeWeekHistory(data.weekHistory),
     links: normalizeLinks(data.links),
-    ideas: normalizeList(data.ideas, false)
+    ideas: normalizeList(data.ideas, false),
+    creators: normalizeCreators(data.creators)
   };
 
   nextState.addKind = nextState.view;
@@ -670,6 +759,19 @@ function normalizeLinks(value) {
     }));
 }
 
+function normalizeCreators(value) {
+  if (!Array.isArray(value)) return [];
+  return value
+    .filter((item) => item && typeof item.title === "string")
+    .map((item) => ({
+      id: typeof item.id === "string" ? item.id : uid(),
+      title: item.title,
+      url: typeof item.url === "string" ? item.url : "",
+      platform: platformMeta[item.platform] ? item.platform : "xiaohongshu",
+      createdAt: Number.isFinite(item.createdAt) ? item.createdAt : Date.now()
+    }));
+}
+
 function normalizeWeekHistory(value) {
   if (!Array.isArray(value)) return [];
   return value
@@ -688,8 +790,10 @@ function loadState() {
     const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
     const nextState = saved ? { ...structuredClone(sampleState), ...saved } : structuredClone(sampleState);
     if (!viewMeta[nextState.view]) nextState.view = "today";
+    if (!platformMeta[nextState.creatorPlatform]) nextState.creatorPlatform = "xiaohongshu";
     if (saved && !Array.isArray(saved.weekHistory)) nextState.weekHistory = [];
     if (!Array.isArray(nextState.weekHistory)) nextState.weekHistory = [];
+    if (!Array.isArray(nextState.creators)) nextState.creators = [];
     nextState.addKind = nextState.view;
     return nextState;
   } catch {

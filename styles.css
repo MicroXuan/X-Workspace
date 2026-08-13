@@ -231,6 +231,14 @@ svg {
   text-align: left;
 }
 
+.nav-image-icon {
+  width: 20px;
+  height: 20px;
+  border-radius: 5px;
+  background: #ffffff;
+  object-fit: cover;
+}
+
 .nav-item:hover,
 .nav-item.is-active {
   border-color: rgba(255, 255, 255, 0.08);
@@ -357,7 +365,7 @@ h3 {
 
 .segmented {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   padding: 4px;
   border: 1px solid var(--line);
   border-radius: var(--radius);
@@ -496,6 +504,34 @@ h3 {
   flex-wrap: wrap;
   gap: 8px;
   justify-content: flex-end;
+}
+
+.platform-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+.platform-tab {
+  min-height: 36px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 0 12px;
+  background: transparent;
+  color: var(--muted);
+  font-weight: 700;
+  transition:
+    background var(--speed) ease,
+    border-color var(--speed) ease,
+    color var(--speed) ease;
+}
+
+.platform-tab:hover,
+.platform-tab.is-active {
+  border-color: var(--text);
+  background: var(--text);
+  color: var(--bg-solid);
 }
 
 .ghost-button {
@@ -849,7 +885,7 @@ h3 {
 
   .nav-list {
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(5, minmax(0, 1fr));
     gap: 6px;
   }
 
@@ -885,7 +921,7 @@ h3 {
 
   .segmented {
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(5, minmax(0, 1fr));
     width: 100%;
     min-width: 0;
   }

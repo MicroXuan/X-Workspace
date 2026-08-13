@@ -14,7 +14,8 @@ values (
     "week": [],
     "weekHistory": [],
     "links": [],
-    "ideas": []
+    "ideas": [],
+    "creators": []
   }'::jsonb
 )
 on conflict (id) do nothing;
