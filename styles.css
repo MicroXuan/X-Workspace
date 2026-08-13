@@ -681,6 +681,11 @@ h3 {
   font-weight: 700;
 }
 
+.tag.is-overdue {
+  background: var(--text);
+  color: var(--bg-solid);
+}
+
 .delete-button {
   display: grid;
   width: 36px;

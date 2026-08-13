@@ -52,7 +52,6 @@ const els = {
   exportDataButton: document.querySelector("#exportDataButton"),
   importDataInput: document.querySelector("#importDataInput"),
   themeButton: document.querySelector("#themeButton"),
-  resetButton: document.querySelector("#resetButton"),
   quickForm: document.querySelector("#quickForm"),
   quickInput: document.querySelector("#quickInput"),
   viewButtons: [...document.querySelectorAll("[data-view]")],
@@ -152,12 +151,6 @@ function bindEvents() {
     state.theme = state.theme === "dark" ? "light" : "dark";
     saveAndRender();
     showToast(state.theme === "dark" ? "已切换到深色模式" : "已切换到浅色模式");
-  });
-
-  els.resetButton.addEventListener("click", () => {
-    state = structuredClone(sampleState);
-    saveAndRender();
-    showToast("已恢复示例数据");
   });
 
   document.addEventListener("click", (event) => {
@@ -361,6 +354,8 @@ function renderWeekHistory() {
 }
 
 function taskTemplate(group, item) {
+  const overdue = group === "today" && !item.done && isBeforeToday(item.createdAt);
+
   return `
     <article class="item">
       <button class="check ${item.done ? "is-done" : ""}" type="button" data-group="${group}" data-check="${item.id}" aria-label="${item.done ? "标记为未完成" : "标记为完成"}">
@@ -369,8 +364,8 @@ function taskTemplate(group, item) {
       <div class="item-main">
         <p class="item-title">${escapeHtml(item.title)}</p>
         <div class="item-meta">
-          <span class="tag">${item.done ? "Done" : "Open"}</span>
-          <span>${formatTime(item.createdAt)}</span>
+          <span class="tag ${overdue ? "is-overdue" : ""}">${overdue ? "已延期" : item.done ? "Done" : "Open"}</span>
+          <span>${group === "today" ? formatTaskDateTime(item.createdAt) : formatTime(item.createdAt)}</span>
         </div>
       </div>
       <button class="delete-button" type="button" data-group="${group}" data-delete="${item.id}" aria-label="删除">
@@ -702,6 +697,27 @@ function formatTime(timestamp) {
     hour: "2-digit",
     minute: "2-digit"
   }).format(new Date(timestamp));
+}
+
+function formatTaskDateTime(timestamp) {
+  const date = new Date(timestamp);
+  const weekdays = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"];
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  const hour = String(date.getHours()).padStart(2, "0");
+  const minute = String(date.getMinutes()).padStart(2, "0");
+
+  return `${month}/${day} ${weekdays[date.getDay()]} ${hour}:${minute}`;
+}
+
+function isBeforeToday(timestamp) {
+  const date = new Date(timestamp);
+  const today = new Date();
+
+  today.setHours(0, 0, 0, 0);
+  date.setHours(0, 0, 0, 0);
+
+  return date < today;
 }
 
 function formatDate(timestamp) {
