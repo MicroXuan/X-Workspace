@@ -10,7 +10,7 @@
     <title>小宣的个人工作台</title>
     <link rel="icon" type="image/png" sizes="200x200" href="/favicon.png" />
     <link rel="apple-touch-icon" href="/favicon.png" />
-    <link rel="stylesheet" href="./styles.css?v=20260813-pure-black" />
+    <link rel="stylesheet" href="./styles.css?v=20260814-week-gantt" />
   </head>
   <body>
     <a class="skip-link" href="#main">跳到主要内容</a>
@@ -147,6 +147,16 @@
                 <button class="ghost-button strong-action" type="button" data-archive-week>归档本周</button>
               </div>
             </div>
+            <section class="gantt-panel" aria-label="本周任务甘特图">
+              <div class="gantt-head">
+                <div>
+                  <p class="eyebrow">Timeline</p>
+                  <h3>本周甘特图</h3>
+                </div>
+                <span id="weekGanttRange">本周</span>
+              </div>
+              <div id="weekGantt"></div>
+            </section>
             <div class="list" id="weekList"></div>
             <section class="history-section" aria-label="历史每周任务">
               <div class="history-head">
@@ -202,6 +212,6 @@
     </div>
 
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
-    <script src="./app.js?v=20260813-pure-black"></script>
+    <script src="./app.js?v=20260814-week-gantt"></script>
   </body>
 </html>

@@ -670,6 +670,206 @@ h3 {
   gap: 8px;
 }
 
+.gantt-panel {
+  display: grid;
+  gap: 12px;
+  overflow-x: auto;
+  margin-bottom: 16px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--bg-solid);
+}
+
+.gantt-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.gantt-head span {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.gantt-grid {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(160px, 0.9fr) repeat(7, minmax(72px, 1fr));
+  gap: 8px;
+  min-width: 760px;
+  overflow: hidden;
+}
+
+.gantt-day,
+.gantt-task-label,
+.gantt-bar,
+.gantt-empty-row {
+  min-height: 42px;
+  border-radius: calc(var(--radius) - 2px);
+}
+
+.gantt-day {
+  display: grid;
+  align-content: center;
+  border: 1px solid var(--line);
+  background: var(--soft);
+  color: var(--muted);
+  text-align: center;
+}
+
+.gantt-day span {
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.gantt-day strong {
+  color: var(--text);
+  font-size: 13px;
+}
+
+.gantt-day.is-today {
+  border-color: var(--text);
+  background: var(--text);
+  color: var(--bg-solid);
+}
+
+.gantt-day.is-today strong {
+  color: var(--bg-solid);
+}
+
+.gantt-task-label {
+  display: grid;
+  align-content: center;
+  min-width: 0;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  background: var(--bg-elevated);
+}
+
+.gantt-task-label span {
+  overflow: hidden;
+  color: var(--text);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+  font-weight: 750;
+}
+
+.gantt-task-label small {
+  overflow: hidden;
+  color: var(--muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+}
+
+.gantt-bar {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  border: 1px solid var(--status-green-line);
+  padding: 0 12px;
+  background: var(--status-green-soft);
+  color: var(--status-green);
+  font-weight: 750;
+  text-align: left;
+  transition:
+    transform var(--speed) ease,
+    border-color var(--speed) ease,
+    background var(--speed) ease;
+}
+
+.gantt-bar:hover {
+  transform: translateY(-1px);
+  border-color: var(--status-green);
+}
+
+.gantt-bar span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gantt-bar.is-complete {
+  border-color: var(--status-gray-line);
+  background: var(--status-gray-soft);
+  color: var(--status-gray);
+}
+
+.gantt-bar.is-overdue-task {
+  border-color: var(--status-red-line);
+  background: var(--status-red-soft);
+  color: var(--status-red);
+}
+
+.gantt-today-line {
+  position: absolute;
+  grid-row: 2 / 999;
+  justify-self: center;
+  top: 50px;
+  bottom: 0;
+  width: 2px;
+  min-height: 42px;
+  border-radius: 999px;
+  background: var(--text);
+  opacity: 0.28;
+  pointer-events: none;
+}
+
+.gantt-empty-row {
+  grid-column: 1 / -1;
+  display: grid;
+  place-items: center;
+  border: 1px dashed var(--line-strong);
+  color: var(--muted);
+}
+
+.unscheduled-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+}
+
+.unscheduled-row > span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 760;
+  text-transform: uppercase;
+}
+
+.unscheduled-row div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.unscheduled-pill {
+  min-height: 32px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 0 10px;
+  background: var(--soft);
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.unscheduled-pill:hover {
+  border-color: var(--text);
+  color: var(--text);
+}
+
+.gantt-panel .empty {
+  min-height: 150px;
+}
+
 .history-section {
   margin-top: 22px;
   padding-top: 18px;
@@ -846,6 +1046,23 @@ h3 {
   color: var(--bg-solid);
 }
 
+.task-week.is-overdue-task {
+  border-color: var(--status-red-line);
+  background:
+    linear-gradient(90deg, var(--status-red-soft), transparent 34%),
+    var(--bg-solid);
+}
+
+.task-week.is-overdue-task .item-title,
+.task-week.is-overdue-task .item-meta {
+  color: var(--status-red);
+}
+
+.task-week.is-overdue-task .tag.is-overdue {
+  background: var(--status-red);
+  color: var(--bg-solid);
+}
+
 .compact-list .item {
   grid-template-columns: minmax(0, 1fr) auto auto;
 }
@@ -885,6 +1102,10 @@ h3 {
 
 .item-edit-grid {
   grid-template-columns: minmax(0, 1fr);
+}
+
+.week-date-edit {
+  grid-template-columns: minmax(0, 1.25fr) minmax(130px, 0.8fr) minmax(130px, 0.8fr);
 }
 
 .two-field-edit {
@@ -1219,6 +1440,7 @@ h3 {
   [data-active-view="creators"] .quick-form,
   .creator-edit-grid,
   .item-edit-grid,
+  .week-date-edit,
   .two-field-edit {
     grid-template-columns: 1fr;
   }

@@ -63,6 +63,8 @@ const els = {
   panels: [...document.querySelectorAll("[data-panel]")],
   todayList: document.querySelector("#todayList"),
   weekList: document.querySelector("#weekList"),
+  weekGantt: document.querySelector("#weekGantt"),
+  weekGanttRange: document.querySelector("#weekGanttRange"),
   weekHistoryList: document.querySelector("#weekHistoryList"),
   weekHistoryCount: document.querySelector("#weekHistoryCount"),
   linksList: document.querySelector("#linksList"),
@@ -378,6 +380,7 @@ function render() {
   document.documentElement.dataset.activeView = state.view;
   renderSegments();
   renderNavigation();
+  renderWeekGantt();
   renderTasks("today", els.todayList);
   renderTasks("week", els.weekList);
   renderWeekHistory();
@@ -481,10 +484,75 @@ function renderWeekHistory() {
     : emptyTemplate("归档一次本周任务后，历史会出现在这里。");
 }
 
+function renderWeekGantt() {
+  const range = getCurrentWeekRange();
+  const days = getCurrentWeekDays();
+  const scheduledTasks = state.week
+    .map((item) => ({ item, schedule: getWeekTaskSchedule(item, days) }))
+    .filter((entry) => entry.schedule);
+  const unplannedTasks = state.week.filter((item) => !getWeekTaskSchedule(item, days));
+  const todayIndex = days.findIndex((day) => day.dateString === getLocalDateString(new Date()));
+
+  els.weekGanttRange.textContent = range.text;
+  els.weekGantt.innerHTML = state.week.length
+    ? `
+      <div class="gantt-grid" style="--today-index: ${Math.max(todayIndex, 0)}">
+        <div class="gantt-label-spacer" aria-hidden="true"></div>
+        ${days.map((day) => `
+          <div class="gantt-day ${day.isToday ? "is-today" : ""}">
+            <span>${day.weekday}</span>
+            <strong>${day.label}</strong>
+          </div>
+        `).join("")}
+        ${todayIndex >= 0 ? `<div class="gantt-today-line" aria-hidden="true" style="grid-column: ${todayIndex + 2};"></div>` : ""}
+        ${scheduledTasks.length
+          ? scheduledTasks.map(({ item, schedule }) => ganttRowTemplate(item, schedule)).join("")
+          : '<div class="gantt-empty-row">本周任务还没有排期。</div>'}
+      </div>
+      ${unplannedTasks.length ? `
+        <div class="unscheduled-row">
+          <span>未排期</span>
+          <div>
+            ${unplannedTasks.map((item) => `<button class="unscheduled-pill" type="button" data-group="week" data-edit-item="${item.id}">${escapeHtml(item.title)}</button>`).join("")}
+          </div>
+        </div>
+      ` : ""}
+    `
+    : emptyTemplate("添加本周任务后，这里会显示甘特图。");
+}
+
+function ganttRowTemplate(item, schedule) {
+  const statusClass = item.done
+    ? "is-complete"
+    : isWeekTaskOverdue(item)
+      ? "is-overdue-task"
+      : "is-active-task";
+  const dateLabel = `${formatDateString(item.startDate)} - ${formatDateString(item.endDate)}`;
+
+  return `
+    <div class="gantt-task-label">
+      <span>${escapeHtml(item.title)}</span>
+      <small>${dateLabel}</small>
+    </div>
+    <button
+      class="gantt-bar ${statusClass}"
+      type="button"
+      title="${escapeAttribute(`${item.title}｜${dateLabel}`)}"
+      data-group="week"
+      data-edit-item="${item.id}"
+      style="grid-column: ${schedule.start + 2} / span ${schedule.span};"
+    >
+      <span>${escapeHtml(item.title)}</span>
+    </button>
+  `;
+}
+
 function taskTemplate(group, item) {
   if (isEditingItem(group, item.id)) return taskEditTemplate(group, item);
 
-  const overdue = group === "today" && !item.done && isBeforeToday(item.createdAt);
+  const overdue = group === "today"
+    ? !item.done && isBeforeToday(item.createdAt)
+    : group === "week" && isWeekTaskOverdue(item);
   const statusClass = item.done
     ? "is-complete"
     : overdue
@@ -502,7 +570,7 @@ function taskTemplate(group, item) {
         <p class="item-title">${escapeHtml(item.title)}</p>
         <div class="item-meta">
           <span class="tag ${overdue ? "is-overdue" : ""}">${overdue ? "已延期" : item.done ? "Done" : "Open"}</span>
-          <span>${group === "today" ? formatTaskDateTime(item.createdAt) : formatTime(item.createdAt)}</span>
+          <span>${getTaskMetaTime(group, item)}</span>
         </div>
       </div>
       <button class="edit-button" type="button" data-group="${group}" data-edit-item="${item.id}" aria-label="修改任务">
@@ -589,7 +657,32 @@ function creatorTemplate(item) {
 }
 
 function taskEditTemplate(group, item) {
-  return simpleItemEditTemplate(group, item, group === "today" ? "每日任务" : "每周任务");
+  if (group !== "week") return simpleItemEditTemplate(group, item, "每日任务");
+
+  return `
+    <article class="item item-edit-row week-edit-row">
+      <div class="item-edit-grid week-date-edit" data-item-edit-row="${group}:${item.id}">
+        <label>
+          <span>每周任务</span>
+          <input type="text" data-item-title value="${escapeAttribute(item.title)}" />
+        </label>
+        <label>
+          <span>开始日期</span>
+          <input type="date" data-item-start value="${escapeAttribute(item.startDate || "")}" />
+        </label>
+        <label>
+          <span>结束日期</span>
+          <input type="date" data-item-end value="${escapeAttribute(item.endDate || "")}" />
+        </label>
+      </div>
+      <button class="edit-button strong-edit" type="button" data-group="${group}" data-save-item="${item.id}" aria-label="保存修改">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6" /></svg>
+      </button>
+      <button class="delete-button" type="button" data-cancel-item-edit aria-label="取消修改">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" /></svg>
+      </button>
+    </article>
+  `;
 }
 
 function simpleItemEditTemplate(group, item, label) {
@@ -677,6 +770,29 @@ function saveItemEdit(group, id) {
         : item
     );
   } else {
+    if (group === "week") {
+      const startDate = row.querySelector("[data-item-start]")?.value || "";
+      const endDate = row.querySelector("[data-item-end]")?.value || "";
+
+      if ((startDate && !endDate) || (!startDate && endDate)) {
+        showToast("开始日期和结束日期需要一起填写。");
+        return;
+      }
+
+      if (startDate && endDate && parseLocalDate(startDate) > parseLocalDate(endDate)) {
+        showToast("结束日期不能早于开始日期。");
+        return;
+      }
+
+      state.week = state.week.map((item) =>
+        item.id === id ? { ...item, title, startDate, endDate } : item
+      );
+      editingItem = null;
+      saveAndRender();
+      showToast("已更新");
+      return;
+    }
+
     state[group] = state[group].map((item) =>
       item.id === id ? { ...item, title } : item
     );
@@ -950,7 +1066,9 @@ function normalizeList(value, hasDone = true) {
       id: typeof item.id === "string" ? item.id : uid(),
       title: item.title,
       ...(hasDone ? { done: Boolean(item.done) } : {}),
-      createdAt: Number.isFinite(item.createdAt) ? item.createdAt : Date.now()
+      createdAt: Number.isFinite(item.createdAt) ? item.createdAt : Date.now(),
+      ...(isDateString(item.startDate) ? { startDate: item.startDate } : {}),
+      ...(isDateString(item.endDate) ? { endDate: item.endDate } : {})
     }));
 }
 
@@ -1052,6 +1170,15 @@ function formatTaskDateTime(timestamp) {
   return `${month}/${day} ${weekdays[date.getDay()]} ${hour}:${minute}`;
 }
 
+function getTaskMetaTime(group, item) {
+  if (group === "today") return formatTaskDateTime(item.createdAt);
+  if (group === "week" && item.startDate && item.endDate) {
+    return `${formatDateString(item.startDate)} - ${formatDateString(item.endDate)}`;
+  }
+
+  return formatTime(item.createdAt);
+}
+
 function isBeforeToday(timestamp) {
   const date = new Date(timestamp);
   const today = new Date();
@@ -1062,11 +1189,25 @@ function isBeforeToday(timestamp) {
   return date < today;
 }
 
+function isWeekTaskOverdue(item) {
+  return Boolean(item.endDate && !item.done && parseLocalDate(item.endDate) < startOfToday());
+}
+
 function formatDate(timestamp) {
   return new Intl.DateTimeFormat("zh-CN", {
     month: "2-digit",
     day: "2-digit"
   }).format(new Date(timestamp));
+}
+
+function formatDateString(value) {
+  const date = parseLocalDate(value);
+  if (!date) return "未排期";
+
+  return new Intl.DateTimeFormat("zh-CN", {
+    month: "2-digit",
+    day: "2-digit"
+  }).format(date);
 }
 
 function getCurrentWeekRange() {
@@ -1083,6 +1224,76 @@ function getCurrentWeekRange() {
     label: `${start.getFullYear()} 年第 ${getISOWeek(start)} 周`,
     text: `${formatDate(start.getTime())} - ${formatDate(end.getTime())}`
   };
+}
+
+function getCurrentWeekDays() {
+  const today = startOfToday();
+  const day = today.getDay() || 7;
+  const start = new Date(today);
+  start.setDate(today.getDate() - day + 1);
+
+  return Array.from({ length: 7 }, (_, index) => {
+    const date = new Date(start);
+    date.setDate(start.getDate() + index);
+
+    return {
+      date,
+      dateString: getLocalDateString(date),
+      weekday: ["周一", "周二", "周三", "周四", "周五", "周六", "周日"][index],
+      label: `${date.getMonth() + 1}/${date.getDate()}`,
+      isToday: date.getTime() === today.getTime()
+    };
+  });
+}
+
+function getWeekTaskSchedule(item, days) {
+  if (!isDateString(item.startDate) || !isDateString(item.endDate)) return null;
+
+  const start = parseLocalDate(item.startDate);
+  const end = parseLocalDate(item.endDate);
+  if (!start || !end || start > end) return null;
+
+  const weekStart = days[0].date;
+  const weekEnd = days[6].date;
+  if (end < weekStart || start > weekEnd) return null;
+
+  const visibleStart = start < weekStart ? weekStart : start;
+  const visibleEnd = end > weekEnd ? weekEnd : end;
+  const startIndex = days.findIndex((day) => day.date.getTime() === visibleStart.getTime());
+  const endIndex = days.findIndex((day) => day.date.getTime() === visibleEnd.getTime());
+
+  if (startIndex < 0 || endIndex < 0) return null;
+
+  return {
+    start: startIndex,
+    span: endIndex - startIndex + 1
+  };
+}
+
+function startOfToday() {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return today;
+}
+
+function getLocalDateString(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function parseLocalDate(value) {
+  if (!isDateString(value)) return null;
+
+  const [year, month, day] = value.split("-").map(Number);
+  const date = new Date(year, month - 1, day);
+  date.setHours(0, 0, 0, 0);
+  return date;
+}
+
+function isDateString(value) {
+  return typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value);
 }
 
 function getISOWeek(date) {
