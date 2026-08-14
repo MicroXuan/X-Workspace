@@ -206,6 +206,7 @@ function isPortableData(value) {
       data &&
       typeof data === "object" &&
       Array.isArray(data.today) &&
+      (!("dailyHistory" in data) || Array.isArray(data.dailyHistory)) &&
       Array.isArray(data.week) &&
       Array.isArray(data.weekHistory) &&
       Array.isArray(data.links) &&
@@ -224,6 +225,7 @@ function createEmptyPortableData() {
       view: "today",
       creatorPlatform: "xiaohongshu",
       today: [],
+      dailyHistory: [],
       week: [],
       weekHistory: [],
       links: [],
@@ -243,6 +245,7 @@ function createPortableData(data) {
       view: typeof data.view === "string" ? data.view : "today",
       creatorPlatform: typeof data.creatorPlatform === "string" ? data.creatorPlatform : "xiaohongshu",
       today: Array.isArray(data.today) ? data.today : [],
+      dailyHistory: Array.isArray(data.dailyHistory) ? data.dailyHistory : [],
       week: Array.isArray(data.week) ? data.week : [],
       weekHistory: Array.isArray(data.weekHistory) ? data.weekHistory : [],
       links: Array.isArray(data.links) ? data.links : [],
