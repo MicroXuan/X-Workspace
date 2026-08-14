@@ -963,8 +963,18 @@ function saveAndRender() {
 }
 
 async function hydrateFromDataFile() {
+  const localState = loadStateFromLocalStorage();
   const serverState = await loadStateFromServer();
   if (serverState) {
+    const reconciledState = reconcileServerState(localState, serverState);
+    if (reconciledState) {
+      state = reconciledState;
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      await saveStateToServerNow();
+      showToast("已保留浏览器里的完整模块数据");
+      return;
+    }
+
     state = serverState;
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     return;
@@ -984,6 +994,71 @@ async function hydrateFromDataFile() {
   } catch {
     // file:// may block fetch; import/export remains available.
   }
+}
+
+function loadStateFromLocalStorage() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    return saved ? normalizeImportedState(saved) : null;
+  } catch {
+    return null;
+  }
+}
+
+function reconcileServerState(localState, serverState) {
+  if (!localState || looksLikeSampleState(localState)) return null;
+
+  const nextState = { ...serverState };
+  let changed = false;
+
+  ["today", "week", "links", "ideas", "creators", "dailyHistory", "weekHistory"].forEach((key) => {
+    const serverItems = Array.isArray(serverState[key]) ? serverState[key] : [];
+    const localItems = Array.isArray(localState[key]) ? localState[key] : [];
+
+    if (!serverItems.length && localItems.length) {
+      nextState[key] = localItems;
+      changed = true;
+    }
+  });
+
+  return changed && getContentScore(nextState) > getContentScore(serverState) ? nextState : null;
+}
+
+function getContentScore(data) {
+  return [
+    data.today,
+    data.week,
+    data.links,
+    data.ideas,
+    data.creators
+  ].reduce((total, value) => total + (Array.isArray(value) ? value.length : 0), 0) +
+    countArchiveTasks(data.dailyHistory) +
+    countArchiveTasks(data.weekHistory);
+}
+
+function countArchiveTasks(value) {
+  if (!Array.isArray(value)) return 0;
+  return value.reduce((total, archive) => total + (Array.isArray(archive.tasks) ? archive.tasks.length : 0), 0);
+}
+
+function looksLikeSampleState(value) {
+  const sampleTitles = new Set([
+    "整理今天最重要的三件事",
+    "复盘正在推进的项目状态",
+    "清理收件箱和待读链接",
+    "完成个人知识库结构升级",
+    "沉淀一个可复用的工作流模板",
+    "AI 产品灵感收藏夹"
+  ]);
+
+  const titles = [
+    ...(Array.isArray(value.today) ? value.today : []),
+    ...(Array.isArray(value.week) ? value.week : []),
+    ...(Array.isArray(value.links) ? value.links : []),
+    ...(Array.isArray(value.ideas) ? value.ideas : [])
+  ].map((item) => item && item.title);
+
+  return titles.some((title) => sampleTitles.has(title));
 }
 
 async function loadStateFromServer() {

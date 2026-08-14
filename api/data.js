@@ -28,6 +28,12 @@ module.exports = async function handler(request, response) {
         return;
       }
 
+      const existingData = await readSupabaseData(supabase);
+      if (isDestructiveOverwrite(existingData, payload.data)) {
+        sendJson(response, 409, { error: "Refused destructive overwrite" });
+        return;
+      }
+
       const { error } = await supabase
         .from("workspace_state")
         .upsert({
@@ -52,18 +58,24 @@ module.exports = async function handler(request, response) {
 async function readPersistentData() {
   const supabase = getSupabaseClient();
   if (supabase) {
-    const { data, error } = await supabase
-      .from("workspace_state")
-      .select("data")
-      .eq("id", STATE_ID)
-      .maybeSingle();
+    const data = await readSupabaseData(supabase);
 
-    if (error) throw error;
-    if (data && data.data) return createPortableData(data.data);
+    if (data) return createPortableData(data);
   }
 
   const fallback = await fs.readFile(FALLBACK_DATA_FILE, "utf8");
   return JSON.parse(fallback);
+}
+
+async function readSupabaseData(supabase) {
+  const { data, error } = await supabase
+    .from("workspace_state")
+    .select("data")
+    .eq("id", STATE_ID)
+    .maybeSingle();
+
+  if (error) throw error;
+  return data && data.data ? data.data : null;
 }
 
 function getSupabaseClient() {
@@ -141,6 +153,32 @@ function isPortableData(value) {
       Array.isArray(data.ideas) &&
       (!("creators" in data) || Array.isArray(data.creators))
   );
+}
+
+function isDestructiveOverwrite(existingData, nextData) {
+  if (!existingData) return false;
+
+  const existingScore = getContentScore(existingData);
+  const nextScore = getContentScore(nextData);
+
+  return existingScore >= 3 && nextScore <= 1 && nextScore < existingScore;
+}
+
+function getContentScore(data) {
+  return [
+    data.today,
+    data.week,
+    data.links,
+    data.ideas,
+    data.creators
+  ].reduce((total, value) => total + (Array.isArray(value) ? value.length : 0), 0) +
+    countArchiveTasks(data.dailyHistory) +
+    countArchiveTasks(data.weekHistory);
+}
+
+function countArchiveTasks(value) {
+  if (!Array.isArray(value)) return 0;
+  return value.reduce((total, archive) => total + (Array.isArray(archive.tasks) ? archive.tasks.length : 0), 0);
 }
 
 function sendJson(response, statusCode, payload) {

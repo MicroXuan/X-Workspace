@@ -79,14 +79,9 @@ async function handleDataApi(request, response) {
 async function readPersistentData() {
   const supabase = getSupabaseClient();
   if (supabase) {
-    const { data, error } = await supabase
-      .from("workspace_state")
-      .select("data")
-      .eq("id", stateId)
-      .maybeSingle();
+    const data = await readSupabaseData(supabase);
 
-    if (error) throw error;
-    if (data && data.data) return JSON.stringify(createPortableData(data.data), null, 2);
+    if (data) return JSON.stringify(createPortableData(data), null, 2);
   }
 
   await ensureDataFile();
@@ -96,6 +91,13 @@ async function readPersistentData() {
 async function writePersistentData(parsed) {
   const supabase = getSupabaseClient();
   if (supabase) {
+    const existingData = await readSupabaseData(supabase);
+    if (isDestructiveOverwrite(existingData, parsed.data)) {
+      const error = new Error("Refused destructive overwrite");
+      error.statusCode = 409;
+      throw error;
+    }
+
     const { error } = await supabase
       .from("workspace_state")
       .upsert({
@@ -110,6 +112,17 @@ async function writePersistentData(parsed) {
 
   await fs.mkdir(dataDir, { recursive: true });
   await fs.writeFile(dataFile, `${JSON.stringify(parsed, null, 2)}\n`, "utf8");
+}
+
+async function readSupabaseData(supabase) {
+  const { data, error } = await supabase
+    .from("workspace_state")
+    .select("data")
+    .eq("id", stateId)
+    .maybeSingle();
+
+  if (error) throw error;
+  return data && data.data ? data.data : null;
 }
 
 function getSupabaseClient() {
@@ -253,6 +266,32 @@ function createPortableData(data) {
       creators: Array.isArray(data.creators) ? data.creators : []
     }
   };
+}
+
+function isDestructiveOverwrite(existingData, nextData) {
+  if (!existingData) return false;
+
+  const existingScore = getContentScore(existingData);
+  const nextScore = getContentScore(nextData);
+
+  return existingScore >= 3 && nextScore <= 1 && nextScore < existingScore;
+}
+
+function getContentScore(data) {
+  return [
+    data.today,
+    data.week,
+    data.links,
+    data.ideas,
+    data.creators
+  ].reduce((total, value) => total + (Array.isArray(value) ? value.length : 0), 0) +
+    countArchiveTasks(data.dailyHistory) +
+    countArchiveTasks(data.weekHistory);
+}
+
+function countArchiveTasks(value) {
+  if (!Array.isArray(value)) return 0;
+  return value.reduce((total, archive) => total + (Array.isArray(archive.tasks) ? archive.tasks.length : 0), 0);
 }
 
 function sendJson(response, statusCode, payload) {
