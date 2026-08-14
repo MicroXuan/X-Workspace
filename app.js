@@ -328,14 +328,18 @@ function toggleDone(group, id, trigger) {
 }
 
 function clearDone(group) {
-  const before = state[group].length;
-  state[group] = state[group].filter((item) => !item.done);
+  const before = activeList(group).length;
+  const deletedAt = Date.now();
+  state[group] = state[group].map((item) =>
+    isVisible(item) && item.done ? { ...item, deletedAt } : item
+  );
   saveAndRender();
-  showToast(before === state[group].length ? "没有已完成任务" : "已清除完成项");
+  showToast(before === activeList(group).length ? "没有已完成任务" : "已清除完成项");
 }
 
 function archiveCurrentWeek() {
-  if (!state.week.length) {
+  const visibleWeek = activeList("week");
+  if (!visibleWeek.length) {
     showToast("本周还没有可归档的任务。");
     return;
   }
@@ -346,21 +350,30 @@ function archiveCurrentWeek() {
     label: range.label,
     range: range.text,
     archivedAt: Date.now(),
-    tasks: state.week.map((item) => ({ ...item }))
+    tasks: visibleWeek.map((item) => ({ ...item }))
   });
-  state.week = [];
+  const archivedAt = Date.now();
+  state.week = state.week.map((item) =>
+    isVisible(item) ? { ...item, archivedAt, deletedAt: archivedAt } : item
+  );
   saveAndRender();
   showToast("本周任务已归档");
 }
 
 function removeWeekArchive(id) {
-  state.weekHistory = state.weekHistory.filter((archive) => archive.id !== id);
+  const deletedAt = Date.now();
+  state.weekHistory = state.weekHistory.map((archive) =>
+    archive.id === id ? { ...archive, deletedAt } : archive
+  );
   saveAndRender();
   showToast("已删除历史周");
 }
 
 function removeItem(group, id) {
-  state[group] = state[group].filter((item) => item.id !== id);
+  const deletedAt = Date.now();
+  state[group] = state[group].map((item) =>
+    item.id === id ? { ...item, deletedAt } : item
+  );
   saveAndRender();
   showToast("已移除");
 }
@@ -372,14 +385,17 @@ function sortLinks() {
 }
 
 function focusRandomIdea() {
-  if (!state.ideas.length) {
+  const ideas = activeList("ideas");
+  if (!ideas.length) {
     showToast("灵感库还没有内容");
     return;
   }
 
-  const index = Math.floor(Math.random() * state.ideas.length);
-  const [idea] = state.ideas.splice(index, 1);
-  state.ideas.unshift(idea);
+  const idea = ideas[Math.floor(Math.random() * ideas.length)];
+  state.ideas = [
+    idea,
+    ...state.ideas.filter((item) => item.id !== idea.id)
+  ];
   saveAndRender();
   showToast("已把一个灵感放到顶部");
 }
@@ -388,7 +404,7 @@ function archiveCompletedDailyTasks() {
   if (!Array.isArray(state.today) || !state.today.length) return;
 
   const today = startOfToday();
-  const completedBeforeToday = state.today.filter((item) => {
+  const completedBeforeToday = activeList("today").filter((item) => {
     if (!item.done) return false;
     const completedAt = Number.isFinite(item.completedAt) ? item.completedAt : item.createdAt;
     return completedAt && startOfDay(new Date(completedAt)) < today;
@@ -396,7 +412,11 @@ function archiveCompletedDailyTasks() {
 
   if (!completedBeforeToday.length) return;
 
-  state.today = state.today.filter((item) => !completedBeforeToday.includes(item));
+  const archivedIds = new Set(completedBeforeToday.map((item) => item.id));
+  const archivedAt = Date.now();
+  state.today = state.today.map((item) =>
+    archivedIds.has(item.id) ? { ...item, archivedAt, deletedAt: archivedAt } : item
+  );
 
   completedBeforeToday.forEach((item) => {
     const completedAt = Number.isFinite(item.completedAt) ? item.completedAt : item.createdAt;
@@ -472,7 +492,7 @@ function renderNavigation() {
 }
 
 function renderTasks(group, container) {
-  const items = group === "today" ? getSortedTodayTasks() : state[group];
+  const items = group === "today" ? getSortedTodayTasks() : activeList(group);
   container.innerHTML = items.length
     ? items.map((item) => taskTemplate(group, item)).join("")
     : emptyTemplate(group === "today" ? "今天还很干净。" : "本周任务等待安排。");
@@ -485,25 +505,27 @@ function getSortedTodayTasks() {
     return 1;
   };
 
-  return [...state.today].sort((a, b) => rank(a) - rank(b) || b.createdAt - a.createdAt);
+  return activeList("today").sort((a, b) => rank(a) - rank(b) || b.createdAt - a.createdAt);
 }
 
 function renderLinks() {
-  els.linksList.innerHTML = state.links.length
-    ? state.links.map(linkTemplate).join("")
+  const links = activeList("links");
+  els.linksList.innerHTML = links.length
+    ? links.map(linkTemplate).join("")
     : emptyTemplate("收藏一个文件或链接。");
 }
 
 function renderIdeas() {
-  els.ideasList.innerHTML = state.ideas.length
-    ? state.ideas.map(ideaTemplate).join("")
+  const ideas = activeList("ideas");
+  els.ideasList.innerHTML = ideas.length
+    ? ideas.map(ideaTemplate).join("")
     : emptyTemplate("把一闪而过的想法放在这里。");
 }
 
 function renderCreators() {
   renderPlatformTabs();
 
-  const visibleCreators = state.creators.filter(
+  const visibleCreators = activeList("creators").filter(
     (item) => item.platform === state.creatorPlatform
   );
 
@@ -513,11 +535,11 @@ function renderCreators() {
 }
 
 function renderMetrics() {
-  const todayDone = state.today.filter((item) => item.done).length;
-  const weekDone = state.week.filter((item) => item.done).length;
-  const progress = state.today.length ? Math.round((todayDone / state.today.length) * 100) : 0;
+  const todayItems = activeList("today");
+  const todayDone = todayItems.filter((item) => item.done).length;
+  const progress = todayItems.length ? Math.round((todayDone / todayItems.length) * 100) : 0;
   const meta = viewMeta[state.view];
-  const activeItems = state[state.view];
+  const activeItems = Array.isArray(state[state.view]) ? activeList(state.view) : [];
   const doneCount = state.view === "today" || state.view === "week"
     ? activeItems.filter((item) => item.done).length
     : null;
@@ -527,9 +549,9 @@ function renderMetrics() {
   els.viewTitle.textContent = meta.title;
   els.viewCount.textContent = activeItems.length;
   els.viewSub.textContent = state.view === "week"
-    ? `${activeItems.length} 个当前 / ${state.weekHistory.length} 周历史`
+    ? `${activeItems.length} 个当前 / ${activeArchives("weekHistory").length} 周历史`
     : state.view === "today"
-    ? `${doneCount} 个已完成 / ${state.dailyHistory.length} 天历史`
+    ? `${doneCount} 个已完成 / ${activeArchives("dailyHistory").length} 天历史`
     : state.view === "creators"
     ? `${getCreatorsByPlatform(state.creatorPlatform).length} 个${platformMeta[state.creatorPlatform]}博主`
     : doneCount === null
@@ -541,16 +563,18 @@ function renderMetrics() {
 }
 
 function renderWeekHistory() {
-  els.weekHistoryCount.textContent = `${state.weekHistory.length} 周`;
-  els.weekHistoryList.innerHTML = state.weekHistory.length
-    ? state.weekHistory.map(weekArchiveTemplate).join("")
+  const history = activeArchives("weekHistory");
+  els.weekHistoryCount.textContent = `${history.length} 周`;
+  els.weekHistoryList.innerHTML = history.length
+    ? history.map(weekArchiveTemplate).join("")
     : emptyTemplate("归档一次本周任务后，历史会出现在这里。");
 }
 
 function renderDailyHistory() {
-  els.dailyHistoryCount.textContent = `${state.dailyHistory.length} 天`;
-  els.dailyHistoryList.innerHTML = state.dailyHistory.length
-    ? state.dailyHistory.map(dailyArchiveTemplate).join("")
+  const history = activeArchives("dailyHistory");
+  els.dailyHistoryCount.textContent = `${history.length} 天`;
+  els.dailyHistoryList.innerHTML = history.length
+    ? history.map(dailyArchiveTemplate).join("")
     : emptyTemplate("完成项会在第二天自动进入这里。");
 }
 
@@ -574,14 +598,15 @@ function dailyArchiveTemplate(archive) {
 function renderWeekGantt() {
   const range = getCurrentWeekRange();
   const days = getCurrentWeekDays();
-  const scheduledTasks = state.week
+  const weekTasks = activeList("week");
+  const scheduledTasks = weekTasks
     .map((item) => ({ item, schedule: getWeekTaskSchedule(item, days) }))
     .filter((entry) => entry.schedule);
-  const unplannedTasks = state.week.filter((item) => !getWeekTaskSchedule(item, days));
+  const unplannedTasks = weekTasks.filter((item) => !getWeekTaskSchedule(item, days));
   const todayIndex = days.findIndex((day) => day.dateString === getLocalDateString(new Date()));
 
   els.weekGanttRange.textContent = range.text;
-  els.weekGantt.innerHTML = state.week.length
+  els.weekGantt.innerHTML = weekTasks.length
     ? `
       <div class="gantt-grid" style="--today-index: ${Math.max(todayIndex, 0)}">
         <div class="gantt-label-spacer" aria-hidden="true"></div>
@@ -913,11 +938,23 @@ function saveCreatorEdit(id) {
 }
 
 function getCreatorsByPlatform(platform) {
-  return state.creators.filter((item) => item.platform === platform);
+  return activeList("creators").filter((item) => item.platform === platform);
 }
 
 function isEditingItem(group, id) {
   return Boolean(editingItem && editingItem.group === group && editingItem.id === id);
+}
+
+function isVisible(item) {
+  return Boolean(item && !Number.isFinite(item.deletedAt));
+}
+
+function activeList(group) {
+  return Array.isArray(state[group]) ? state[group].filter(isVisible) : [];
+}
+
+function activeArchives(group) {
+  return Array.isArray(state[group]) ? state[group].filter(isVisible) : [];
 }
 
 function weekArchiveTemplate(archive) {
@@ -1232,6 +1269,8 @@ function normalizeList(value, hasDone = true) {
       ...(hasDone ? { done: Boolean(item.done) } : {}),
       createdAt: Number.isFinite(item.createdAt) ? item.createdAt : Date.now(),
       ...(Number.isFinite(item.completedAt) ? { completedAt: item.completedAt } : {}),
+      ...(Number.isFinite(item.deletedAt) ? { deletedAt: item.deletedAt } : {}),
+      ...(Number.isFinite(item.archivedAt) ? { archivedAt: item.archivedAt } : {}),
       ...(isDateString(item.startDate) ? { startDate: item.startDate } : {}),
       ...(isDateString(item.endDate) ? { endDate: item.endDate } : {})
     }));
@@ -1246,7 +1285,8 @@ function normalizeLinks(value) {
       title: item.title,
       url: typeof item.url === "string" ? item.url : "workspace://file",
       type: item.type === "link" ? "link" : "file",
-      createdAt: Number.isFinite(item.createdAt) ? item.createdAt : Date.now()
+      createdAt: Number.isFinite(item.createdAt) ? item.createdAt : Date.now(),
+      ...(Number.isFinite(item.deletedAt) ? { deletedAt: item.deletedAt } : {})
     }));
 }
 
@@ -1259,7 +1299,8 @@ function normalizeCreators(value) {
       title: item.title,
       url: normalizeCreatorUrl(typeof item.url === "string" ? item.url : ""),
       platform: platformMeta[item.platform] ? item.platform : "xiaohongshu",
-      createdAt: Number.isFinite(item.createdAt) ? item.createdAt : Date.now()
+      createdAt: Number.isFinite(item.createdAt) ? item.createdAt : Date.now(),
+      ...(Number.isFinite(item.deletedAt) ? { deletedAt: item.deletedAt } : {})
     }));
 }
 
@@ -1288,6 +1329,7 @@ function normalizeWeekHistory(value) {
       label: typeof archive.label === "string" ? archive.label : "历史周",
       range: typeof archive.range === "string" ? archive.range : "",
       archivedAt: Number.isFinite(archive.archivedAt) ? archive.archivedAt : Date.now(),
+      ...(Number.isFinite(archive.deletedAt) ? { deletedAt: archive.deletedAt } : {}),
       tasks: normalizeList(archive.tasks)
     }));
 }
@@ -1301,6 +1343,7 @@ function normalizeDailyHistory(value) {
       date: isDateString(archive.date) ? archive.date : getLocalDateString(new Date(archive.archivedAt || Date.now())),
       label: typeof archive.label === "string" ? archive.label : formatDailyHistoryLabel(archive.date),
       archivedAt: Number.isFinite(archive.archivedAt) ? archive.archivedAt : Date.now(),
+      ...(Number.isFinite(archive.deletedAt) ? { deletedAt: archive.deletedAt } : {}),
       tasks: normalizeList(archive.tasks)
     }))
     .sort((a, b) => b.date.localeCompare(a.date));
