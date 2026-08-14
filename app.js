@@ -14,6 +14,7 @@ const sampleState = {
     { id: uid(), title: "复盘正在推进的项目状态", done: false, createdAt: Date.now() - 600000 },
     { id: uid(), title: "清理收件箱和待读链接", done: true, createdAt: Date.now() - 300000 }
   ],
+  dailyHistory: [],
   week: [
     { id: uid(), title: "完成个人知识库结构升级", done: false, createdAt: Date.now() - 200000 },
     { id: uid(), title: "沉淀一个可复用的工作流模板", done: false, createdAt: Date.now() - 100000 }
@@ -62,6 +63,8 @@ const els = {
   viewButtons: [...document.querySelectorAll("[data-view]")],
   panels: [...document.querySelectorAll("[data-panel]")],
   todayList: document.querySelector("#todayList"),
+  dailyHistoryList: document.querySelector("#dailyHistoryList"),
+  dailyHistoryCount: document.querySelector("#dailyHistoryCount"),
   weekList: document.querySelector("#weekList"),
   weekGantt: document.querySelector("#weekGantt"),
   weekGanttRange: document.querySelector("#weekGanttRange"),
@@ -135,6 +138,7 @@ init();
 
 async function init() {
   await hydrateFromDataFile();
+  archiveCompletedDailyTasks();
 
   const initialView = window.location.hash.replace("#", "");
   if (viewMeta[initialView]) {
@@ -312,7 +316,13 @@ function toggleDone(group, id, trigger) {
   }
 
   state[group] = state[group].map((item) =>
-    item.id === id ? { ...item, done: !item.done } : item
+    item.id === id
+      ? {
+          ...item,
+          done: !item.done,
+          completedAt: item.done ? null : Date.now()
+        }
+      : item
   );
   saveAndRender();
 }
@@ -374,6 +384,44 @@ function focusRandomIdea() {
   showToast("已把一个灵感放到顶部");
 }
 
+function archiveCompletedDailyTasks() {
+  if (!Array.isArray(state.today) || !state.today.length) return;
+
+  const today = startOfToday();
+  const completedBeforeToday = state.today.filter((item) => {
+    if (!item.done) return false;
+    const completedAt = Number.isFinite(item.completedAt) ? item.completedAt : item.createdAt;
+    return completedAt && startOfDay(new Date(completedAt)) < today;
+  });
+
+  if (!completedBeforeToday.length) return;
+
+  state.today = state.today.filter((item) => !completedBeforeToday.includes(item));
+
+  completedBeforeToday.forEach((item) => {
+    const completedAt = Number.isFinite(item.completedAt) ? item.completedAt : item.createdAt;
+    const date = getLocalDateString(new Date(completedAt));
+    const label = formatDailyHistoryLabel(date);
+    let archive = state.dailyHistory.find((entry) => entry.date === date);
+
+    if (!archive) {
+      archive = {
+        id: uid(),
+        date,
+        label,
+        archivedAt: Date.now(),
+        tasks: []
+      };
+      state.dailyHistory.unshift(archive);
+    }
+
+    archive.tasks.unshift({ ...item, completedAt });
+  });
+
+  state.dailyHistory.sort((a, b) => b.date.localeCompare(a.date));
+  persistState();
+}
+
 function render() {
   ensureStateShape();
   document.documentElement.dataset.theme = state.theme;
@@ -382,6 +430,7 @@ function render() {
   renderNavigation();
   renderWeekGantt();
   renderTasks("today", els.todayList);
+  renderDailyHistory();
   renderTasks("week", els.weekList);
   renderWeekHistory();
   renderLinks();
@@ -394,6 +443,7 @@ function ensureStateShape() {
   if (!viewMeta[state.view]) state.view = "today";
   if (!platformMeta[state.creatorPlatform]) state.creatorPlatform = "xiaohongshu";
   if (!Array.isArray(state.creators)) state.creators = [];
+  if (!Array.isArray(state.dailyHistory)) state.dailyHistory = [];
 }
 
 function renderSegments() {
@@ -422,9 +472,20 @@ function renderNavigation() {
 }
 
 function renderTasks(group, container) {
-  container.innerHTML = state[group].length
-    ? state[group].map((item) => taskTemplate(group, item)).join("")
+  const items = group === "today" ? getSortedTodayTasks() : state[group];
+  container.innerHTML = items.length
+    ? items.map((item) => taskTemplate(group, item)).join("")
     : emptyTemplate(group === "today" ? "今天还很干净。" : "本周任务等待安排。");
+}
+
+function getSortedTodayTasks() {
+  const rank = (item) => {
+    if (item.done) return 2;
+    if (isBeforeToday(item.createdAt)) return 0;
+    return 1;
+  };
+
+  return [...state.today].sort((a, b) => rank(a) - rank(b) || b.createdAt - a.createdAt);
 }
 
 function renderLinks() {
@@ -467,6 +528,8 @@ function renderMetrics() {
   els.viewCount.textContent = activeItems.length;
   els.viewSub.textContent = state.view === "week"
     ? `${activeItems.length} 个当前 / ${state.weekHistory.length} 周历史`
+    : state.view === "today"
+    ? `${doneCount} 个已完成 / ${state.dailyHistory.length} 天历史`
     : state.view === "creators"
     ? `${getCreatorsByPlatform(state.creatorPlatform).length} 个${platformMeta[state.creatorPlatform]}博主`
     : doneCount === null
@@ -482,6 +545,30 @@ function renderWeekHistory() {
   els.weekHistoryList.innerHTML = state.weekHistory.length
     ? state.weekHistory.map(weekArchiveTemplate).join("")
     : emptyTemplate("归档一次本周任务后，历史会出现在这里。");
+}
+
+function renderDailyHistory() {
+  els.dailyHistoryCount.textContent = `${state.dailyHistory.length} 天`;
+  els.dailyHistoryList.innerHTML = state.dailyHistory.length
+    ? state.dailyHistory.map(dailyArchiveTemplate).join("")
+    : emptyTemplate("完成项会在第二天自动进入这里。");
+}
+
+function dailyArchiveTemplate(archive) {
+  return `
+    <article class="archive-item daily-archive-item">
+      <div>
+        <p class="archive-title">${escapeHtml(archive.label)}</p>
+        <div class="item-meta">
+          <span class="tag">${archive.tasks.length} Done</span>
+          <span>归档于 ${formatDate(archive.archivedAt)}</span>
+        </div>
+      </div>
+      <div class="archive-task-list">
+        ${archive.tasks.map(archiveTaskTemplate).join("")}
+      </div>
+    </article>
+  `;
 }
 
 function renderWeekGantt() {
@@ -1028,6 +1115,7 @@ function createPortableData() {
       view: state.view,
       creatorPlatform: state.creatorPlatform,
       today: state.today,
+      dailyHistory: state.dailyHistory,
       week: state.week,
       weekHistory: state.weekHistory,
       links: state.links,
@@ -1047,6 +1135,7 @@ function normalizeImportedState(payload) {
     view: viewMeta[data.view] ? data.view : "today",
     creatorPlatform: platformMeta[data.creatorPlatform] ? data.creatorPlatform : "xiaohongshu",
     today: normalizeList(data.today),
+    dailyHistory: normalizeDailyHistory(data.dailyHistory),
     week: normalizeList(data.week),
     weekHistory: normalizeWeekHistory(data.weekHistory),
     links: normalizeLinks(data.links),
@@ -1067,6 +1156,7 @@ function normalizeList(value, hasDone = true) {
       title: item.title,
       ...(hasDone ? { done: Boolean(item.done) } : {}),
       createdAt: Number.isFinite(item.createdAt) ? item.createdAt : Date.now(),
+      ...(Number.isFinite(item.completedAt) ? { completedAt: item.completedAt } : {}),
       ...(isDateString(item.startDate) ? { startDate: item.startDate } : {}),
       ...(isDateString(item.endDate) ? { endDate: item.endDate } : {})
     }));
@@ -1127,6 +1217,20 @@ function normalizeWeekHistory(value) {
     }));
 }
 
+function normalizeDailyHistory(value) {
+  if (!Array.isArray(value)) return [];
+  return value
+    .filter((archive) => archive && Array.isArray(archive.tasks))
+    .map((archive) => ({
+      id: typeof archive.id === "string" ? archive.id : uid(),
+      date: isDateString(archive.date) ? archive.date : getLocalDateString(new Date(archive.archivedAt || Date.now())),
+      label: typeof archive.label === "string" ? archive.label : formatDailyHistoryLabel(archive.date),
+      archivedAt: Number.isFinite(archive.archivedAt) ? archive.archivedAt : Date.now(),
+      tasks: normalizeList(archive.tasks)
+    }))
+    .sort((a, b) => b.date.localeCompare(a.date));
+}
+
 function loadState() {
   try {
     const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
@@ -1135,6 +1239,8 @@ function loadState() {
     if (!platformMeta[nextState.creatorPlatform]) nextState.creatorPlatform = "xiaohongshu";
     if (saved && !Array.isArray(saved.weekHistory)) nextState.weekHistory = [];
     if (!Array.isArray(nextState.weekHistory)) nextState.weekHistory = [];
+    if (saved && !Array.isArray(saved.dailyHistory)) nextState.dailyHistory = [];
+    if (!Array.isArray(nextState.dailyHistory)) nextState.dailyHistory = [];
     if (!Array.isArray(nextState.creators)) nextState.creators = [];
     nextState.addKind = nextState.view;
     return nextState;
@@ -1168,6 +1274,15 @@ function formatTaskDateTime(timestamp) {
   const minute = String(date.getMinutes()).padStart(2, "0");
 
   return `${month}/${day} ${weekdays[date.getDay()]} ${hour}:${minute}`;
+}
+
+function formatDailyHistoryLabel(value) {
+  const date = parseLocalDate(value) || startOfToday();
+  const weekdays = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"];
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+
+  return `${month}/${day} ${weekdays[date.getDay()]}`;
 }
 
 function getTaskMetaTime(group, item) {
@@ -1272,8 +1387,13 @@ function getWeekTaskSchedule(item, days) {
 
 function startOfToday() {
   const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  return today;
+  return startOfDay(today);
+}
+
+function startOfDay(date) {
+  const nextDate = new Date(date);
+  nextDate.setHours(0, 0, 0, 0);
+  return nextDate;
 }
 
 function getLocalDateString(date) {

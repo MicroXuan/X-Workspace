@@ -10,7 +10,7 @@
     <title>小宣的个人工作台</title>
     <link rel="icon" type="image/png" sizes="200x200" href="/favicon.png" />
     <link rel="apple-touch-icon" href="/favicon.png" />
-    <link rel="stylesheet" href="./styles.css?v=20260814-week-gantt" />
+    <link rel="stylesheet" href="./styles.css?v=20260814-daily-history" />
   </head>
   <body>
     <a class="skip-link" href="#main">跳到主要内容</a>
@@ -134,6 +134,16 @@
               <button class="ghost-button" type="button" data-clear="today">清除已完成</button>
             </div>
             <div class="list" id="todayList"></div>
+            <section class="history-section daily-history-section" aria-label="每日历史">
+              <div class="history-head">
+                <div>
+                  <p class="eyebrow">History</p>
+                  <h3>每日历史</h3>
+                </div>
+                <span id="dailyHistoryCount">0 天</span>
+              </div>
+              <div class="history-list daily-history-list" id="dailyHistoryList"></div>
+            </section>
           </section>
 
           <section class="panel task-panel grid-item" data-panel="week">
@@ -212,6 +222,6 @@
     </div>
 
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
-    <script src="./app.js?v=20260814-week-gantt"></script>
+    <script src="./app.js?v=20260814-daily-history"></script>
   </body>
 </html>
