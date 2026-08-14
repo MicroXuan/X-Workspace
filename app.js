@@ -328,6 +328,8 @@ function toggleDone(group, id, trigger) {
 }
 
 function clearDone(group) {
+  if (group === "today") archiveCompletedDailyTasksByAge({ includeToday: true });
+
   const before = activeList(group).length;
   const deletedAt = Date.now();
   state[group] = state[group].map((item) =>
@@ -401,13 +403,18 @@ function focusRandomIdea() {
 }
 
 function archiveCompletedDailyTasks() {
+  return archiveCompletedDailyTasksByAge({ includeToday: false });
+}
+
+function archiveCompletedDailyTasksByAge({ includeToday }) {
   if (!Array.isArray(state.today) || !state.today.length) return;
 
   const today = startOfToday();
-  const completedBeforeToday = activeList("today").filter((item) => {
+  const completedBeforeToday = state.today.filter((item) => {
     if (!item.done) return false;
-    const completedAt = Number.isFinite(item.completedAt) ? item.completedAt : item.createdAt;
-    return completedAt && startOfDay(new Date(completedAt)) < today;
+    const taskDate = Number.isFinite(item.createdAt) ? item.createdAt : item.completedAt;
+    const taskDay = taskDate ? startOfDay(new Date(taskDate)) : null;
+    return taskDay && (includeToday ? taskDay <= today : taskDay < today);
   });
 
   if (!completedBeforeToday.length) return;
@@ -420,7 +427,8 @@ function archiveCompletedDailyTasks() {
 
   completedBeforeToday.forEach((item) => {
     const completedAt = Number.isFinite(item.completedAt) ? item.completedAt : item.createdAt;
-    const date = getLocalDateString(new Date(completedAt));
+    const taskDate = Number.isFinite(item.createdAt) ? item.createdAt : completedAt;
+    const date = getLocalDateString(new Date(taskDate));
     const label = formatDailyHistoryLabel(date);
     let archive = state.dailyHistory.find((entry) => entry.date === date);
 
@@ -435,11 +443,18 @@ function archiveCompletedDailyTasks() {
       state.dailyHistory.unshift(archive);
     }
 
-    archive.tasks.unshift({ ...item, completedAt });
+    if (!archive.tasks.some((task) => task.id === item.id)) {
+      archive.tasks.unshift(stripHiddenFields({ ...item, completedAt }));
+    }
   });
 
   state.dailyHistory.sort((a, b) => b.date.localeCompare(a.date));
   persistState();
+}
+
+function stripHiddenFields(item) {
+  const { deletedAt, archivedAt, ...visibleItem } = item;
+  return visibleItem;
 }
 
 function render() {
@@ -579,17 +594,18 @@ function renderDailyHistory() {
 }
 
 function dailyArchiveTemplate(archive) {
+  const tasks = Array.isArray(archive.tasks) ? archive.tasks.filter(isVisible) : [];
   return `
     <article class="archive-item daily-archive-item">
       <div>
         <p class="archive-title">${escapeHtml(archive.label)}</p>
         <div class="item-meta">
-          <span class="tag">${archive.tasks.length} Done</span>
+          <span class="tag">${tasks.length} Done</span>
           <span>归档于 ${formatDate(archive.archivedAt)}</span>
         </div>
       </div>
       <div class="archive-task-list">
-        ${archive.tasks.map(archiveTaskTemplate).join("")}
+        ${tasks.map(archiveTaskTemplate).join("")}
       </div>
     </article>
   `;
@@ -958,14 +974,15 @@ function activeArchives(group) {
 }
 
 function weekArchiveTemplate(archive) {
-  const doneCount = archive.tasks.filter((item) => item.done).length;
+  const tasks = Array.isArray(archive.tasks) ? archive.tasks.filter(isVisible) : [];
+  const doneCount = tasks.filter((item) => item.done).length;
   return `
     <article class="archive-item">
       <div class="archive-top">
         <div>
           <p class="archive-title">${escapeHtml(archive.label)}</p>
           <div class="item-meta">
-            <span class="tag">${doneCount}/${archive.tasks.length} Done</span>
+            <span class="tag">${doneCount}/${tasks.length} Done</span>
             <span>${escapeHtml(archive.range)}</span>
             <span>归档于 ${formatDate(archive.archivedAt)}</span>
           </div>
@@ -975,7 +992,7 @@ function weekArchiveTemplate(archive) {
         </button>
       </div>
       <div class="archive-task-list">
-        ${archive.tasks.map(archiveTaskTemplate).join("")}
+        ${tasks.map(archiveTaskTemplate).join("")}
       </div>
     </article>
   `;
