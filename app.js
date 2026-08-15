@@ -558,6 +558,7 @@ function renderMetrics() {
   const doneCount = state.view === "today" || state.view === "week"
     ? activeItems.filter((item) => item.done).length
     : null;
+  const dailyHistory = getVisibleDailyHistory();
 
   els.heroTitle.textContent = meta.hero;
   els.viewEyebrow.textContent = meta.eyebrow;
@@ -566,7 +567,7 @@ function renderMetrics() {
   els.viewSub.textContent = state.view === "week"
     ? `${activeItems.length} 个当前 / ${activeArchives("weekHistory").length} 周历史`
     : state.view === "today"
-    ? `${doneCount} 个已完成 / ${activeArchives("dailyHistory").length} 天历史`
+    ? `${doneCount} 个已完成 / ${dailyHistory.length} 天历史`
     : state.view === "creators"
     ? `${getCreatorsByPlatform(state.creatorPlatform).length} 个${platformMeta[state.creatorPlatform]}博主`
     : doneCount === null
@@ -586,11 +587,18 @@ function renderWeekHistory() {
 }
 
 function renderDailyHistory() {
-  const history = activeArchives("dailyHistory");
+  const history = getVisibleDailyHistory();
   els.dailyHistoryCount.textContent = `${history.length} 天`;
   els.dailyHistoryList.innerHTML = history.length
     ? history.map(dailyArchiveTemplate).join("")
     : emptyTemplate("完成项会在第二天自动进入这里。");
+}
+
+function getVisibleDailyHistory() {
+  const todayKey = getLocalDateString(startOfToday());
+  return activeArchives("dailyHistory")
+    .filter((archive) => archive.date < todayKey)
+    .filter((archive) => Array.isArray(archive.tasks) && archive.tasks.some(isVisible));
 }
 
 function dailyArchiveTemplate(archive) {
