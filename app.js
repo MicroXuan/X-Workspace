@@ -669,8 +669,8 @@ function dailyArchiveTemplate(archive) {
 }
 
 function renderWeekGantt() {
-  const range = getCurrentWeekRange();
-  const days = getCurrentWeekDays();
+  const range = getPlanningWeekRange();
+  const days = getPlanningWeekDays();
   const weekTasks = activeList("week");
   const scheduledTasks = weekTasks
     .map((item) => ({ item, schedule: getWeekTaskSchedule(item, days) }))
@@ -678,7 +678,7 @@ function renderWeekGantt() {
   const unplannedTasks = weekTasks.filter((item) => !getWeekTaskSchedule(item, days));
   const todayIndex = days.findIndex((day) => day.dateString === getLocalDateString(new Date()));
 
-  els.weekGanttRange.textContent = range.text;
+  els.weekGanttRange.textContent = `${range.name} ${range.text}`;
   els.weekGantt.innerHTML = weekTasks.length
     ? `
       <div class="gantt-grid" style="--today-index: ${Math.max(todayIndex, 0)}">
@@ -692,7 +692,7 @@ function renderWeekGantt() {
         ${todayIndex >= 0 ? `<div class="gantt-today-line" aria-hidden="true" style="grid-column: ${todayIndex + 2};"></div>` : ""}
         ${scheduledTasks.length
           ? scheduledTasks.map(({ item, schedule }) => ganttRowTemplate(item, schedule)).join("")
-          : '<div class="gantt-empty-row">本周任务还没有排期。</div>'}
+          : `<div class="gantt-empty-row">${range.name}任务还没有排期。</div>`}
       </div>
       ${unplannedTasks.length ? `
         <div class="unscheduled-row">
@@ -703,7 +703,7 @@ function renderWeekGantt() {
         </div>
       ` : ""}
     `
-    : emptyTemplate("添加本周任务后，这里会显示甘特图。");
+    : emptyTemplate(`添加${range.name}任务后，这里会显示甘特图。`);
 }
 
 function ganttRowTemplate(item, schedule) {
@@ -864,7 +864,8 @@ function taskEditTemplate(group, item) {
 }
 
 function weekRangePickerTemplate(item) {
-  const days = getCurrentWeekDays();
+  const range = getPlanningWeekRange();
+  const days = getPlanningWeekDays();
   const startDate = item.startDate || "";
   const endDate = item.endDate || "";
   const rangeLabel = getWeekRangeLabel(startDate, endDate);
@@ -880,7 +881,7 @@ function weekRangePickerTemplate(item) {
           <strong data-range-label>${escapeHtml(rangeLabel)}</strong>
         </summary>
         <div class="date-range-popover">
-          <div class="date-range-grid" aria-label="选择本周开始和结束日期">
+          <div class="date-range-grid" aria-label="选择${range.name}开始和结束日期">
             ${days.map((day) => weekRangeDayTemplate(day, startDate, endDate)).join("")}
           </div>
           <div class="date-range-helper">
@@ -1700,12 +1701,7 @@ function formatDateString(value) {
 }
 
 function getCurrentWeekRange() {
-  const now = new Date();
-  const day = now.getDay() || 7;
-  const start = new Date(now);
-  start.setHours(0, 0, 0, 0);
-  start.setDate(now.getDate() - day + 1);
-
+  const start = getWeekStartDate(startOfToday());
   const end = new Date(start);
   end.setDate(start.getDate() + 6);
 
@@ -1715,12 +1711,46 @@ function getCurrentWeekRange() {
   };
 }
 
-function getCurrentWeekDays() {
-  const today = startOfToday();
-  const day = today.getDay() || 7;
-  const start = new Date(today);
-  start.setDate(today.getDate() - day + 1);
+function getPlanningWeekRange() {
+  const start = getPlanningWeekStartDate();
+  const end = new Date(start);
+  end.setDate(start.getDate() + 6);
 
+  return {
+    name: isPlanningNextWeek() ? "下周" : "本周",
+    label: `${start.getFullYear()} 年第 ${getISOWeek(start)} 周`,
+    text: `${formatDate(start.getTime())} - ${formatDate(end.getTime())}`
+  };
+}
+
+function getCurrentWeekDays() {
+  return getWeekDaysFromStart(getWeekStartDate(startOfToday()));
+}
+
+function getPlanningWeekDays() {
+  return getWeekDaysFromStart(getPlanningWeekStartDate());
+}
+
+function getPlanningWeekStartDate() {
+  const start = getWeekStartDate(startOfToday());
+  if (isPlanningNextWeek()) start.setDate(start.getDate() + 7);
+  return start;
+}
+
+function getWeekStartDate(date) {
+  const day = date.getDay() || 7;
+  const start = new Date(date);
+  start.setHours(0, 0, 0, 0);
+  start.setDate(date.getDate() - day + 1);
+  return start;
+}
+
+function isPlanningNextWeek() {
+  return startOfToday().getDay() === 0;
+}
+
+function getWeekDaysFromStart(start) {
+  const today = startOfToday();
   return Array.from({ length: 7 }, (_, index) => {
     const date = new Date(start);
     date.setDate(start.getDate() + index);
