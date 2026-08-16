@@ -1438,6 +1438,7 @@ h3 {
 
 .item-meta {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
   align-items: center;
   margin-top: 2px;
@@ -1462,8 +1463,21 @@ h3 {
   color: var(--bg-solid);
 }
 
+.source-tag {
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 0 8px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
 .delete-button,
-.edit-button {
+.edit-button,
+.derive-button {
   display: grid;
   width: 36px;
   height: 36px;
@@ -1475,6 +1489,7 @@ h3 {
   transition: background var(--speed) ease, color var(--speed) ease;
 }
 
+.derive-button:hover,
 .edit-button:hover,
 .strong-edit {
   background: var(--soft);

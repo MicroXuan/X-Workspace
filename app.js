@@ -226,7 +226,12 @@ function bindEvents() {
     const deleteWeekArchiveButton = event.target.closest("[data-delete-week-archive]");
     const rangeDayButton = event.target.closest("[data-range-day]");
     const clearRangeButton = event.target.closest("[data-clear-range]");
+    const deriveTodayButton = event.target.closest("[data-derive-today]");
 
+    if (deriveTodayButton) {
+      deriveTodayTask(deriveTodayButton.dataset.deriveToday);
+      return;
+    }
     if (rangeDayButton) {
       selectWeekRangeDay(rangeDayButton);
       return;
@@ -355,6 +360,39 @@ function toggleDone(group, id, trigger) {
       : item
   );
   saveAndRender();
+}
+
+function deriveTodayTask(weekTaskId) {
+  const weekTask = activeList("week").find((item) => item.id === weekTaskId);
+  if (!weekTask) {
+    showToast("没有找到这条周任务");
+    return;
+  }
+
+  const todayKey = getLocalDateString(startOfToday());
+  const alreadyDerived = activeList("today").some((item) =>
+    item.sourceWeekId === weekTask.id &&
+    getLocalDateString(new Date(item.createdAt)) === todayKey
+  );
+
+  if (alreadyDerived) {
+    showToast("今天已经拆过这条周任务");
+    return;
+  }
+
+  state.today.unshift({
+    id: uid(),
+    title: weekTask.title,
+    done: false,
+    createdAt: Date.now(),
+    sourceWeekId: weekTask.id,
+    sourceWeekTitle: weekTask.title
+  });
+  state.view = "today";
+  state.addKind = "today";
+  window.history.replaceState(null, "", "#today");
+  saveAndRender();
+  showToast("已拆到今日任务");
 }
 
 function clearDone(group) {
@@ -751,8 +789,14 @@ function taskTemplate(group, item) {
         <div class="item-meta">
           <span class="tag ${overdue ? "is-overdue" : ""}">${overdue ? "已延期" : item.done ? "Done" : "Open"}</span>
           <span>${getTaskMetaTime(group, item)}</span>
+          ${group === "today" && item.sourceWeekTitle ? `<span class="source-tag">来自周任务</span>` : ""}
         </div>
       </div>
+      ${group === "week" ? `
+        <button class="derive-button" type="button" data-derive-today="${item.id}" aria-label="拆到今日任务" title="拆到今日任务">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14" /><path d="m7 14 5 5 5-5" /><path d="M5 5h14" /></svg>
+        </button>
+      ` : ""}
       <button class="edit-button" type="button" data-group="${group}" data-edit-item="${item.id}" aria-label="修改任务">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9" /><path d="m16.5 3.5 4 4L8 20H4v-4L16.5 3.5Z" /></svg>
       </button>
@@ -1484,7 +1528,9 @@ function normalizeList(value, hasDone = true) {
       ...(Number.isFinite(item.deletedAt) ? { deletedAt: item.deletedAt } : {}),
       ...(Number.isFinite(item.archivedAt) ? { archivedAt: item.archivedAt } : {}),
       ...(isDateString(item.startDate) ? { startDate: item.startDate } : {}),
-      ...(isDateString(item.endDate) ? { endDate: item.endDate } : {})
+      ...(isDateString(item.endDate) ? { endDate: item.endDate } : {}),
+      ...(typeof item.sourceWeekId === "string" ? { sourceWeekId: item.sourceWeekId } : {}),
+      ...(typeof item.sourceWeekTitle === "string" ? { sourceWeekTitle: item.sourceWeekTitle } : {})
     }));
 }
 
