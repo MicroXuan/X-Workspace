@@ -743,7 +743,7 @@ function renderWeekGantt() {
         `).join("")}
         ${todayIndex >= 0 ? `<div class="gantt-today-line" aria-hidden="true" style="grid-column: ${todayIndex + 1};"></div>` : ""}
         ${scheduledTasks.length
-          ? scheduledTasks.map(({ item, schedule }) => ganttRowTemplate(item, schedule)).join("")
+          ? scheduledTasks.map(({ item, schedule }, index) => ganttRowTemplate(item, schedule, index)).join("")
           : `<div class="gantt-empty-row">${range.name}任务还没有排期。</div>`}
       </div>
       ${unplannedTasks.length ? `
@@ -758,7 +758,7 @@ function renderWeekGantt() {
     : emptyTemplate(`添加${range.name}任务后，这里会显示甘特图。`);
 }
 
-function ganttRowTemplate(item, schedule) {
+function ganttRowTemplate(item, schedule, rowIndex) {
   const statusClass = item.done
     ? "is-complete"
     : isWeekTaskOverdue(item)
@@ -773,7 +773,7 @@ function ganttRowTemplate(item, schedule) {
       title="${escapeAttribute(`${item.title}｜${dateLabel}`)}"
       data-group="week"
       data-edit-item="${item.id}"
-      style="grid-column: ${schedule.start + 1} / span ${schedule.span};"
+      style="grid-column: ${schedule.start + 1} / span ${schedule.span}; grid-row: ${rowIndex + 2};"
     >
       <span>${escapeHtml(item.title)}</span>
     </button>

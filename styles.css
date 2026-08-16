@@ -1145,6 +1145,29 @@ h3 {
   color: var(--bg-solid);
 }
 
+.task-week.is-complete {
+  border-color: var(--status-gray-line);
+  background:
+    linear-gradient(90deg, var(--status-gray-soft), transparent 34%),
+    var(--bg-solid);
+}
+
+.task-week.is-complete .item-title,
+.task-week.is-complete .item-meta {
+  color: var(--status-gray);
+}
+
+.task-week.is-complete .tag {
+  background: var(--status-gray-soft);
+  color: var(--status-gray);
+}
+
+.task-week.is-complete .check.is-done {
+  border-color: var(--status-gray);
+  background: var(--status-gray);
+  color: var(--bg-solid);
+}
+
 .task-week.is-overdue-task {
   border-color: var(--status-red-line);
   background:
