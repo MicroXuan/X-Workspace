@@ -224,7 +224,17 @@ function bindEvents() {
     const randomButton = event.target.closest("[data-random-idea]");
     const archiveWeekButton = event.target.closest("[data-archive-week]");
     const deleteWeekArchiveButton = event.target.closest("[data-delete-week-archive]");
+    const rangeDayButton = event.target.closest("[data-range-day]");
+    const clearRangeButton = event.target.closest("[data-clear-range]");
 
+    if (rangeDayButton) {
+      selectWeekRangeDay(rangeDayButton);
+      return;
+    }
+    if (clearRangeButton) {
+      clearWeekRange(clearRangeButton);
+      return;
+    }
     if (clearButton) clearDone(clearButton.dataset.clear);
     if (deleteButton) removeItem(deleteButton.dataset.group, deleteButton.dataset.delete);
     if (editItemButton) {
@@ -834,10 +844,6 @@ function creatorTemplate(item) {
 function taskEditTemplate(group, item) {
   if (group !== "week") return simpleItemEditTemplate(group, item, "每日任务");
 
-  const rangeLabel = item.startDate && item.endDate
-    ? `${formatDateString(item.startDate)} - ${formatDateString(item.endDate)}`
-    : "选择时间范围";
-
   return `
     <article class="item item-edit-row week-edit-row">
       <div class="item-edit-grid week-date-edit" data-item-edit-row="${group}:${item.id}">
@@ -845,25 +851,7 @@ function taskEditTemplate(group, item) {
           <span>每周任务</span>
           <input type="text" data-item-title value="${escapeAttribute(item.title)}" />
         </label>
-        <div class="date-range-field">
-          <span>时间范围</span>
-          <details class="date-range-picker">
-            <summary>
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 2v4M16 2v4M3.5 9.5h17M5 5h14a1.5 1.5 0 0 1 1.5 1.5v12A1.5 1.5 0 0 1 19 20H5a1.5 1.5 0 0 1-1.5-1.5v-12A1.5 1.5 0 0 1 5 5Z" /></svg>
-              <strong>${escapeHtml(rangeLabel)}</strong>
-            </summary>
-            <div class="date-range-popover">
-              <label>
-                <span>开始</span>
-                <input type="date" data-item-start value="${escapeAttribute(item.startDate || "")}" />
-              </label>
-              <label>
-                <span>结束</span>
-                <input type="date" data-item-end value="${escapeAttribute(item.endDate || "")}" />
-              </label>
-            </div>
-          </details>
-        </div>
+        ${weekRangePickerTemplate(item)}
       </div>
       <button class="edit-button strong-edit" type="button" data-group="${group}" data-save-item="${item.id}" aria-label="保存修改">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6" /></svg>
@@ -873,6 +861,127 @@ function taskEditTemplate(group, item) {
       </button>
     </article>
   `;
+}
+
+function weekRangePickerTemplate(item) {
+  const days = getCurrentWeekDays();
+  const startDate = item.startDate || "";
+  const endDate = item.endDate || "";
+  const rangeLabel = getWeekRangeLabel(startDate, endDate);
+
+  return `
+    <div class="date-range-field">
+      <span>时间范围</span>
+      <input type="hidden" data-item-start value="${escapeAttribute(startDate)}" />
+      <input type="hidden" data-item-end value="${escapeAttribute(endDate)}" />
+      <details class="date-range-picker">
+        <summary>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 2v4M16 2v4M3.5 9.5h17M5 5h14a1.5 1.5 0 0 1 1.5 1.5v12A1.5 1.5 0 0 1 19 20H5a1.5 1.5 0 0 1-1.5-1.5v-12A1.5 1.5 0 0 1 5 5Z" /></svg>
+          <strong data-range-label>${escapeHtml(rangeLabel)}</strong>
+        </summary>
+        <div class="date-range-popover">
+          <div class="date-range-grid" aria-label="选择本周开始和结束日期">
+            ${days.map((day) => weekRangeDayTemplate(day, startDate, endDate)).join("")}
+          </div>
+          <div class="date-range-helper">
+            <span data-range-hint>${escapeHtml(getWeekRangeHint(startDate, endDate))}</span>
+            <button type="button" data-clear-range>清空</button>
+          </div>
+        </div>
+      </details>
+    </div>
+  `;
+}
+
+function weekRangeDayTemplate(day, startDate, endDate) {
+  const classes = [
+    "range-day",
+    day.dateString === startDate ? "is-start" : "",
+    day.dateString === endDate ? "is-end" : "",
+    isDateWithinRange(day.dateString, startDate, endDate) ? "is-in-range" : "",
+    day.isToday ? "is-today" : ""
+  ].filter(Boolean).join(" ");
+
+  return `
+    <button class="${classes}" type="button" data-range-day="${day.dateString}" aria-pressed="${isDateWithinRange(day.dateString, startDate, endDate)}">
+      <span>${day.weekday}</span>
+      <strong>${day.label}</strong>
+    </button>
+  `;
+}
+
+function selectWeekRangeDay(button) {
+  const row = button.closest("[data-item-edit-row]");
+  if (!row) return;
+
+  const startInput = row.querySelector("[data-item-start]");
+  const endInput = row.querySelector("[data-item-end]");
+  const selectedDate = button.dataset.rangeDay;
+  if (!startInput || !endInput || !isDateString(selectedDate)) return;
+
+  const currentStart = startInput.value;
+  const currentEnd = endInput.value;
+
+  if (!currentStart || currentEnd) {
+    startInput.value = selectedDate;
+    endInput.value = "";
+  } else if (parseLocalDate(selectedDate) < parseLocalDate(currentStart)) {
+    startInput.value = selectedDate;
+    endInput.value = currentStart;
+  } else {
+    endInput.value = selectedDate;
+  }
+
+  updateWeekRangePicker(row);
+}
+
+function clearWeekRange(button) {
+  const row = button.closest("[data-item-edit-row]");
+  if (!row) return;
+
+  row.querySelector("[data-item-start]").value = "";
+  row.querySelector("[data-item-end]").value = "";
+  updateWeekRangePicker(row);
+}
+
+function updateWeekRangePicker(row) {
+  const startDate = row.querySelector("[data-item-start]")?.value || "";
+  const endDate = row.querySelector("[data-item-end]")?.value || "";
+  const label = row.querySelector("[data-range-label]");
+  const hint = row.querySelector("[data-range-hint]");
+
+  if (label) label.textContent = getWeekRangeLabel(startDate, endDate);
+  if (hint) hint.textContent = getWeekRangeHint(startDate, endDate);
+
+  row.querySelectorAll("[data-range-day]").forEach((button) => {
+    const date = button.dataset.rangeDay;
+    const isStart = date === startDate;
+    const isEnd = date === endDate;
+    const inRange = isDateWithinRange(date, startDate, endDate);
+
+    button.classList.toggle("is-start", isStart);
+    button.classList.toggle("is-end", isEnd);
+    button.classList.toggle("is-in-range", inRange);
+    button.setAttribute("aria-pressed", String(inRange));
+  });
+}
+
+function getWeekRangeLabel(startDate, endDate) {
+  if (startDate && endDate) return `${formatDateString(startDate)} - ${formatDateString(endDate)}`;
+  if (startDate) return `已选开始 ${formatDateString(startDate)}`;
+  return "选择时间范围";
+}
+
+function getWeekRangeHint(startDate, endDate) {
+  if (startDate && endDate) return "已选好开始和结束";
+  if (startDate) return "再点一次结束日期";
+  return "先点开始日期，再点结束日期";
+}
+
+function isDateWithinRange(date, startDate, endDate) {
+  if (!isDateString(date) || !isDateString(startDate)) return false;
+  if (!isDateString(endDate)) return date === startDate;
+  return date >= startDate && date <= endDate;
 }
 
 function simpleItemEditTemplate(group, item, label) {

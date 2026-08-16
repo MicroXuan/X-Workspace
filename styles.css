@@ -1318,9 +1318,8 @@ h3 {
   top: calc(100% + 8px);
   right: 0;
   display: grid;
-  width: min(360px, 82vw);
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
+  width: min(520px, 86vw);
+  gap: 12px;
   border: 1px solid var(--line);
   border-radius: var(--radius);
   padding: 10px;
@@ -1328,9 +1327,95 @@ h3 {
   box-shadow: var(--shadow);
 }
 
-.date-range-popover label {
+.date-range-grid {
   display: grid;
-  gap: 5px;
+  grid-template-columns: repeat(7, minmax(54px, 1fr));
+  gap: 6px;
+}
+
+.range-day {
+  display: grid;
+  min-height: 58px;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: calc(var(--radius) - 2px);
+  padding: 6px;
+  background: var(--bg-solid);
+  color: var(--muted);
+  transition:
+    border-color var(--speed) ease,
+    background var(--speed) ease,
+    color var(--speed) ease,
+    transform var(--speed) ease;
+}
+
+.range-day:hover {
+  border-color: var(--text);
+  color: var(--text);
+  transform: translateY(-1px);
+}
+
+.range-day span {
+  font-size: 12px;
+  font-weight: 740;
+}
+
+.range-day strong {
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.range-day.is-today {
+  border-color: var(--line-strong);
+}
+
+.range-day.is-in-range {
+  border-color: var(--status-green-line);
+  background: var(--status-green-soft);
+  color: var(--status-green);
+}
+
+.range-day.is-in-range strong {
+  color: var(--status-green);
+}
+
+.range-day.is-start,
+.range-day.is-end {
+  border-color: var(--text);
+  background: var(--text);
+  color: var(--bg-solid);
+}
+
+.range-day.is-start strong,
+.range-day.is-end strong {
+  color: var(--bg-solid);
+}
+
+.date-range-helper {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 720;
+}
+
+.date-range-helper button {
+  min-height: 30px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 0 10px;
+  background: var(--bg-solid);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 760;
+}
+
+.date-range-helper button:hover {
+  border-color: var(--text);
+  color: var(--text);
 }
 
 .check {
@@ -1658,6 +1743,15 @@ h3 {
     margin-top: 8px;
     box-shadow: none;
   }
+
+  .date-range-grid {
+    grid-template-columns: repeat(7, minmax(36px, 1fr));
+  }
+
+  .range-day {
+    min-height: 52px;
+    padding: 5px 3px;
+  }
 }
 
 @media (max-width: 430px) {
@@ -1673,8 +1767,12 @@ h3 {
     justify-content: stretch;
   }
 
-  .date-range-popover {
-    grid-template-columns: 1fr;
+  .range-day span {
+    font-size: 11px;
+  }
+
+  .range-day strong {
+    font-size: 13px;
   }
 
   .panel-actions .ghost-button {
