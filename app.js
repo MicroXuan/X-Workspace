@@ -19,6 +19,7 @@ const sampleState = {
     { id: uid(), title: "完成个人知识库结构升级", done: false, createdAt: Date.now() - 200000 },
     { id: uid(), title: "沉淀一个可复用的工作流模板", done: false, createdAt: Date.now() - 100000 }
   ],
+  weekReview: createEmptyWeekReview(),
   weekHistory: [
     {
       id: uid(),
@@ -47,6 +48,7 @@ let state = loadState();
 let toastTimer;
 let serverStorageAvailable = false;
 let serverSaveTimer;
+let weekReviewStatusTimer;
 let editingItem = null;
 let editingCreatorId = null;
 
@@ -68,6 +70,8 @@ const els = {
   weekList: document.querySelector("#weekList"),
   weekGantt: document.querySelector("#weekGantt"),
   weekGanttRange: document.querySelector("#weekGanttRange"),
+  weekReviewFields: [...document.querySelectorAll("[data-week-review]")],
+  weekReviewStatus: document.querySelector("#weekReviewStatus"),
   weekHistoryList: document.querySelector("#weekHistoryList"),
   weekHistoryCount: document.querySelector("#weekHistoryCount"),
   linksList: document.querySelector("#linksList"),
@@ -180,6 +184,22 @@ function bindEvents() {
       state.creatorPlatform = button.dataset.platform;
       saveAndRender();
       els.quickInput.focus();
+    });
+  });
+
+  els.weekReviewFields.forEach((field) => {
+    field.addEventListener("input", () => {
+      state.weekReview = normalizeWeekReview({
+        ...state.weekReview,
+        [field.dataset.weekReview]: field.value,
+        updatedAt: Date.now()
+      });
+      persistState();
+      setWeekReviewStatus("正在保存...");
+      window.clearTimeout(weekReviewStatusTimer);
+      weekReviewStatusTimer = window.setTimeout(() => {
+        setWeekReviewStatus("已保存");
+      }, 420);
     });
   });
 
@@ -347,17 +367,19 @@ function archiveCurrentWeek() {
   }
 
   const range = getCurrentWeekRange();
+  const archivedAt = Date.now();
   state.weekHistory.unshift({
     id: uid(),
     label: range.label,
     range: range.text,
-    archivedAt: Date.now(),
+    archivedAt,
+    review: normalizeWeekReview(state.weekReview),
     tasks: visibleWeek.map((item) => ({ ...item }))
   });
-  const archivedAt = Date.now();
   state.week = state.week.map((item) =>
     isVisible(item) ? { ...item, archivedAt, deletedAt: archivedAt } : item
   );
+  state.weekReview = createEmptyWeekReview();
   saveAndRender();
   showToast("本周任务已归档");
 }
@@ -467,6 +489,7 @@ function render() {
   renderTasks("today", els.todayList);
   renderDailyHistory();
   renderTasks("week", els.weekList);
+  renderWeekReview();
   renderWeekHistory();
   renderLinks();
   renderIdeas();
@@ -479,6 +502,7 @@ function ensureStateShape() {
   if (!platformMeta[state.creatorPlatform]) state.creatorPlatform = "xiaohongshu";
   if (!Array.isArray(state.creators)) state.creators = [];
   if (!Array.isArray(state.dailyHistory)) state.dailyHistory = [];
+  state.weekReview = normalizeWeekReview(state.weekReview);
 }
 
 function renderSegments() {
@@ -584,6 +608,21 @@ function renderWeekHistory() {
   els.weekHistoryList.innerHTML = history.length
     ? history.map(weekArchiveTemplate).join("")
     : emptyTemplate("归档一次本周任务后，历史会出现在这里。");
+}
+
+function renderWeekReview() {
+  const review = normalizeWeekReview(state.weekReview);
+  els.weekReviewFields.forEach((field) => {
+    const value = review[field.dataset.weekReview] || "";
+    if (document.activeElement !== field && field.value !== value) {
+      field.value = value;
+    }
+  });
+  setWeekReviewStatus(review.updatedAt ? `已保存 ${formatTime(review.updatedAt)}` : "自动保存");
+}
+
+function setWeekReviewStatus(message) {
+  if (els.weekReviewStatus) els.weekReviewStatus.textContent = message;
 }
 
 function renderDailyHistory() {
@@ -1002,6 +1041,7 @@ function weekArchiveTemplate(archive) {
       <div class="archive-task-list">
         ${tasks.map(archiveTaskTemplate).join("")}
       </div>
+      ${weekReviewArchiveTemplate(archive.review)}
     </article>
   `;
 }
@@ -1011,6 +1051,25 @@ function archiveTaskTemplate(item) {
     <div class="archive-task ${item.done ? "is-done" : ""}">
       <span aria-hidden="true"></span>
       <p>${escapeHtml(item.title)}</p>
+    </div>
+  `;
+}
+
+function weekReviewArchiveTemplate(reviewValue) {
+  const review = normalizeWeekReview(reviewValue);
+  if (!hasWeekReviewContent(review)) return "";
+
+  return `
+    <div class="archive-review">
+      <p class="archive-review-title">每周复盘</p>
+      <div class="archive-review-grid">
+        ${getWeekReviewItems(review).filter((item) => item.value).map((item) => `
+          <section>
+            <span>${item.label}</span>
+            <p>${escapeHtml(item.value)}</p>
+          </section>
+        `).join("")}
+      </div>
     </div>
   `;
 }
@@ -1083,6 +1142,11 @@ function reconcileServerState(localState, serverState) {
     }
   });
 
+  if (!hasWeekReviewContent(serverState.weekReview) && hasWeekReviewContent(localState.weekReview)) {
+    nextState.weekReview = localState.weekReview;
+    changed = true;
+  }
+
   return changed && getContentScore(nextState) > getContentScore(serverState) ? nextState : null;
 }
 
@@ -1095,7 +1159,8 @@ function getContentScore(data) {
     data.creators
   ].reduce((total, value) => total + (Array.isArray(value) ? value.length : 0), 0) +
     countArchiveTasks(data.dailyHistory) +
-    countArchiveTasks(data.weekHistory);
+    countArchiveTasks(data.weekHistory) +
+    (hasWeekReviewContent(data.weekReview) ? 1 : 0);
 }
 
 function countArchiveTasks(value) {
@@ -1254,6 +1319,7 @@ function createPortableData() {
       today: state.today,
       dailyHistory: state.dailyHistory,
       week: state.week,
+      weekReview: normalizeWeekReview(state.weekReview),
       weekHistory: state.weekHistory,
       links: state.links,
       ideas: state.ideas,
@@ -1274,6 +1340,7 @@ function normalizeImportedState(payload) {
     today: normalizeList(data.today),
     dailyHistory: normalizeDailyHistory(data.dailyHistory),
     week: normalizeList(data.week),
+    weekReview: normalizeWeekReview(data.weekReview),
     weekHistory: normalizeWeekHistory(data.weekHistory),
     links: normalizeLinks(data.links),
     ideas: normalizeList(data.ideas, false),
@@ -1329,6 +1396,44 @@ function normalizeCreators(value) {
     }));
 }
 
+function createEmptyWeekReview() {
+  return {
+    wins: "",
+    unfinished: "",
+    blockers: "",
+    nextFocus: "",
+    lesson: "",
+    updatedAt: null
+  };
+}
+
+function normalizeWeekReview(value) {
+  const review = value && typeof value === "object" ? value : {};
+  return {
+    wins: typeof review.wins === "string" ? review.wins : "",
+    unfinished: typeof review.unfinished === "string" ? review.unfinished : "",
+    blockers: typeof review.blockers === "string" ? review.blockers : "",
+    nextFocus: typeof review.nextFocus === "string" ? review.nextFocus : "",
+    lesson: typeof review.lesson === "string" ? review.lesson : "",
+    updatedAt: Number.isFinite(review.updatedAt) ? review.updatedAt : null
+  };
+}
+
+function getWeekReviewItems(reviewValue) {
+  const review = normalizeWeekReview(reviewValue);
+  return [
+    { key: "wins", label: "完成", value: review.wins.trim() },
+    { key: "unfinished", label: "未完成", value: review.unfinished.trim() },
+    { key: "blockers", label: "原因", value: review.blockers.trim() },
+    { key: "nextFocus", label: "下周重点", value: review.nextFocus.trim() },
+    { key: "lesson", label: "经验", value: review.lesson.trim() }
+  ];
+}
+
+function hasWeekReviewContent(reviewValue) {
+  return getWeekReviewItems(reviewValue).some((item) => item.value);
+}
+
 function normalizeCreatorUrl(value) {
   return normalizeOptionalUrl(value);
 }
@@ -1355,6 +1460,7 @@ function normalizeWeekHistory(value) {
       range: typeof archive.range === "string" ? archive.range : "",
       archivedAt: Number.isFinite(archive.archivedAt) ? archive.archivedAt : Date.now(),
       ...(Number.isFinite(archive.deletedAt) ? { deletedAt: archive.deletedAt } : {}),
+      review: normalizeWeekReview(archive.review),
       tasks: normalizeList(archive.tasks)
     }));
 }
@@ -1385,6 +1491,7 @@ function loadState() {
     if (saved && !Array.isArray(saved.dailyHistory)) nextState.dailyHistory = [];
     if (!Array.isArray(nextState.dailyHistory)) nextState.dailyHistory = [];
     if (!Array.isArray(nextState.creators)) nextState.creators = [];
+    nextState.weekReview = normalizeWeekReview(nextState.weekReview);
     nextState.addKind = nextState.view;
     return nextState;
   } catch {

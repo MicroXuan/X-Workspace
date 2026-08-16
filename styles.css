@@ -92,7 +92,8 @@ body {
 }
 
 button,
-input {
+input,
+textarea {
   font: inherit;
 }
 
@@ -870,6 +871,77 @@ h3 {
   min-height: 150px;
 }
 
+.week-review-section {
+  display: grid;
+  gap: 14px;
+  margin-top: 16px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--bg-solid);
+}
+
+.review-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.review-head h3 {
+  margin: 0;
+  font-size: 17px;
+}
+
+.review-status,
+#weekReviewStatus {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.review-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.review-grid label {
+  display: grid;
+  gap: 7px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 760;
+}
+
+.review-grid textarea {
+  width: 100%;
+  min-height: 94px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 10px 12px;
+  background: var(--bg-elevated);
+  color: var(--text);
+  line-height: 1.45;
+  resize: vertical;
+  transition:
+    border-color var(--speed) ease,
+    background var(--speed) ease,
+    box-shadow var(--speed) ease;
+}
+
+.review-grid textarea:focus {
+  border-color: var(--text);
+  background: var(--bg-solid);
+  box-shadow: 0 0 0 4px var(--accent-soft);
+  outline: none;
+}
+
+.review-wide {
+  grid-column: 1 / -1;
+}
+
 .history-section {
   margin-top: 22px;
   padding-top: 18px;
@@ -960,6 +1032,50 @@ h3 {
   text-decoration: line-through;
   text-decoration-thickness: 1px;
   text-underline-offset: 3px;
+}
+
+.archive-review {
+  display: grid;
+  gap: 10px;
+  border-top: 1px solid var(--status-gray-line);
+  padding-top: 12px;
+}
+
+.archive-review-title {
+  margin: 0;
+  color: var(--status-gray);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.archive-review-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.archive-review-grid section {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  border: 1px solid var(--status-gray-line);
+  border-radius: calc(var(--radius) - 2px);
+  padding: 9px;
+  background: var(--bg-solid);
+}
+
+.archive-review-grid span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 760;
+}
+
+.archive-review-grid p {
+  margin: 0;
+  color: var(--status-gray);
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-size: 13px;
 }
 
 .item {
@@ -1438,6 +1554,8 @@ h3 {
   }
 
   [data-active-view="creators"] .quick-form,
+  .review-grid,
+  .archive-review-grid,
   .creator-edit-grid,
   .item-edit-grid,
   .week-date-edit,

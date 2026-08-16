@@ -10,7 +10,7 @@
     <title>小宣的个人工作台</title>
     <link rel="icon" type="image/png" sizes="200x200" href="/favicon.png" />
     <link rel="apple-touch-icon" href="/favicon.png" />
-    <link rel="stylesheet" href="./styles.css?v=20260814-history-filter" />
+    <link rel="stylesheet" href="./styles.css?v=20260816-week-review" />
   </head>
   <body>
     <a class="skip-link" href="#main">跳到主要内容</a>
@@ -168,6 +168,37 @@
               <div id="weekGantt"></div>
             </section>
             <div class="list" id="weekList"></div>
+            <section class="week-review-section" aria-label="每周复盘">
+              <div class="review-head">
+                <div>
+                  <p class="eyebrow">Review</p>
+                  <h3>每周复盘</h3>
+                </div>
+                <span id="weekReviewStatus">自动保存</span>
+              </div>
+              <div class="review-grid">
+                <label>
+                  <span>本周完成了什么？</span>
+                  <textarea data-week-review="wins" rows="4" placeholder="写下完成的进展..."></textarea>
+                </label>
+                <label>
+                  <span>本周没完成什么？</span>
+                  <textarea data-week-review="unfinished" rows="4" placeholder="留下还没收尾的事..."></textarea>
+                </label>
+                <label>
+                  <span>为什么没完成？</span>
+                  <textarea data-week-review="blockers" rows="4" placeholder="记录卡住的原因..."></textarea>
+                </label>
+                <label>
+                  <span>下周最重要的 3 件事是什么？</span>
+                  <textarea data-week-review="nextFocus" rows="4" placeholder="列出下周重点..."></textarea>
+                </label>
+                <label class="review-wide">
+                  <span>本周有什么值得记住的经验？</span>
+                  <textarea data-week-review="lesson" rows="4" placeholder="沉淀一个经验..."></textarea>
+                </label>
+              </div>
+            </section>
             <section class="history-section" aria-label="历史每周任务">
               <div class="history-head">
                 <div>
@@ -222,6 +253,6 @@
     </div>
 
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
-    <script src="./app.js?v=20260814-history-filter"></script>
+    <script src="./app.js?v=20260816-week-review"></script>
   </body>
 </html>

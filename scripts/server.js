@@ -221,6 +221,7 @@ function isPortableData(value) {
       Array.isArray(data.today) &&
       (!("dailyHistory" in data) || Array.isArray(data.dailyHistory)) &&
       Array.isArray(data.week) &&
+      (!("weekReview" in data) || (data.weekReview && typeof data.weekReview === "object")) &&
       Array.isArray(data.weekHistory) &&
       Array.isArray(data.links) &&
       Array.isArray(data.ideas) &&
@@ -232,7 +233,7 @@ function createEmptyPortableData() {
   return {
     schemaVersion: 1,
     exportedAt: new Date().toISOString(),
-    app: "Personal Workbench",
+    app: "小宣的个人工作台",
     data: {
       theme: "light",
       view: "today",
@@ -240,6 +241,7 @@ function createEmptyPortableData() {
       today: [],
       dailyHistory: [],
       week: [],
+      weekReview: createEmptyWeekReview(),
       weekHistory: [],
       links: [],
       ideas: [],
@@ -252,7 +254,7 @@ function createPortableData(data) {
   return {
     schemaVersion: 1,
     exportedAt: new Date().toISOString(),
-    app: "Personal Workbench",
+    app: "小宣的个人工作台",
     data: {
       theme: data.theme === "dark" ? "dark" : "light",
       view: typeof data.view === "string" ? data.view : "today",
@@ -260,6 +262,7 @@ function createPortableData(data) {
       today: Array.isArray(data.today) ? data.today : [],
       dailyHistory: Array.isArray(data.dailyHistory) ? data.dailyHistory : [],
       week: Array.isArray(data.week) ? data.week : [],
+      weekReview: normalizeWeekReview(data.weekReview),
       weekHistory: Array.isArray(data.weekHistory) ? data.weekHistory : [],
       links: Array.isArray(data.links) ? data.links : [],
       ideas: Array.isArray(data.ideas) ? data.ideas : [],
@@ -286,12 +289,42 @@ function getContentScore(data) {
     data.creators
   ].reduce((total, value) => total + (Array.isArray(value) ? value.length : 0), 0) +
     countArchiveTasks(data.dailyHistory) +
-    countArchiveTasks(data.weekHistory);
+    countArchiveTasks(data.weekHistory) +
+    (hasWeekReviewContent(data.weekReview) ? 1 : 0);
 }
 
 function countArchiveTasks(value) {
   if (!Array.isArray(value)) return 0;
   return value.reduce((total, archive) => total + (Array.isArray(archive.tasks) ? archive.tasks.length : 0), 0);
+}
+
+function createEmptyWeekReview() {
+  return {
+    wins: "",
+    unfinished: "",
+    blockers: "",
+    nextFocus: "",
+    lesson: "",
+    updatedAt: null
+  };
+}
+
+function normalizeWeekReview(value) {
+  const review = value && typeof value === "object" ? value : {};
+  return {
+    wins: typeof review.wins === "string" ? review.wins : "",
+    unfinished: typeof review.unfinished === "string" ? review.unfinished : "",
+    blockers: typeof review.blockers === "string" ? review.blockers : "",
+    nextFocus: typeof review.nextFocus === "string" ? review.nextFocus : "",
+    lesson: typeof review.lesson === "string" ? review.lesson : "",
+    updatedAt: Number.isFinite(review.updatedAt) ? review.updatedAt : null
+  };
+}
+
+function hasWeekReviewContent(value) {
+  const review = normalizeWeekReview(value);
+  return [review.wins, review.unfinished, review.blockers, review.nextFocus, review.lesson]
+    .some((item) => item.trim());
 }
 
 function sendJson(response, statusCode, payload) {
