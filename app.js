@@ -792,17 +792,19 @@ function taskTemplate(group, item) {
           ${group === "today" && item.sourceWeekTitle ? `<span class="source-tag">来自周任务</span>` : ""}
         </div>
       </div>
-      ${group === "week" ? `
-        <button class="derive-button" type="button" data-derive-today="${item.id}" aria-label="拆到今日任务" title="拆到今日任务">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14" /><path d="m7 14 5 5 5-5" /><path d="M5 5h14" /></svg>
+      <div class="item-actions" aria-label="任务操作">
+        ${group === "week" ? `
+          <button class="derive-button" type="button" data-derive-today="${item.id}" aria-label="拆到今日任务" title="拆到今日任务">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14" /><path d="m7 14 5 5 5-5" /><path d="M5 5h14" /></svg>
+          </button>
+        ` : ""}
+        <button class="edit-button" type="button" data-group="${group}" data-edit-item="${item.id}" aria-label="修改任务">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9" /><path d="m16.5 3.5 4 4L8 20H4v-4L16.5 3.5Z" /></svg>
         </button>
-      ` : ""}
-      <button class="edit-button" type="button" data-group="${group}" data-edit-item="${item.id}" aria-label="修改任务">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9" /><path d="m16.5 3.5 4 4L8 20H4v-4L16.5 3.5Z" /></svg>
-      </button>
-      <button class="delete-button" type="button" data-group="${group}" data-delete="${item.id}" aria-label="删除">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 14h10l1-14M9 7V4h6v3" /></svg>
-      </button>
+        <button class="delete-button" type="button" data-group="${group}" data-delete="${item.id}" aria-label="删除">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 14h10l1-14M9 7V4h6v3" /></svg>
+        </button>
+      </div>
     </article>
   `;
 }

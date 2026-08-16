@@ -1054,7 +1054,7 @@ h3 {
 .item {
   position: relative;
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   gap: 10px;
   align-items: center;
   min-height: 54px;
@@ -1083,6 +1083,15 @@ h3 {
 .task-item .tag {
   background: var(--status-green-soft);
   color: var(--status-green);
+}
+
+.item-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  align-self: center;
+  white-space: nowrap;
 }
 
 .task-today.is-complete {
@@ -1746,6 +1755,14 @@ h3 {
     min-height: 52px;
     padding: 5px 3px;
   }
+
+  .task-item {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+  }
+
+  .item-actions {
+    gap: 2px;
+  }
 }
 
 @media (max-width: 430px) {
@@ -1771,6 +1788,13 @@ h3 {
 
   .panel-actions .ghost-button {
     width: 100%;
+  }
+
+  .derive-button,
+  .edit-button,
+  .delete-button {
+    width: 32px;
+    height: 32px;
   }
 }
 
