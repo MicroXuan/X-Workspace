@@ -1079,6 +1079,7 @@ h3 {
 }
 
 .item {
+  position: relative;
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto auto;
   gap: 10px;
@@ -1197,8 +1198,13 @@ h3 {
 }
 
 .item-edit-row {
+  z-index: 12;
   grid-template-columns: minmax(0, 1fr) auto auto;
   align-items: end;
+}
+
+.week-edit-row {
+  z-index: 18;
 }
 
 .compact-list .creator-edit-item {
@@ -1314,7 +1320,7 @@ h3 {
 
 .date-range-popover {
   position: absolute;
-  z-index: 4;
+  z-index: 20;
   top: calc(100% + 8px);
   right: 0;
   display: grid;
