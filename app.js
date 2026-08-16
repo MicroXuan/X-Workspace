@@ -682,14 +682,13 @@ function renderWeekGantt() {
   els.weekGantt.innerHTML = weekTasks.length
     ? `
       <div class="gantt-grid" style="--today-index: ${Math.max(todayIndex, 0)}">
-        <div class="gantt-label-spacer" aria-hidden="true"></div>
         ${days.map((day) => `
           <div class="gantt-day ${day.isToday ? "is-today" : ""}">
             <span>${day.weekday}</span>
             <strong>${day.label}</strong>
           </div>
         `).join("")}
-        ${todayIndex >= 0 ? `<div class="gantt-today-line" aria-hidden="true" style="grid-column: ${todayIndex + 2};"></div>` : ""}
+        ${todayIndex >= 0 ? `<div class="gantt-today-line" aria-hidden="true" style="grid-column: ${todayIndex + 1};"></div>` : ""}
         ${scheduledTasks.length
           ? scheduledTasks.map(({ item, schedule }) => ganttRowTemplate(item, schedule)).join("")
           : `<div class="gantt-empty-row">${range.name}任务还没有排期。</div>`}
@@ -715,17 +714,13 @@ function ganttRowTemplate(item, schedule) {
   const dateLabel = `${formatDateString(item.startDate)} - ${formatDateString(item.endDate)}`;
 
   return `
-    <div class="gantt-task-label">
-      <span>${escapeHtml(item.title)}</span>
-      <small>${dateLabel}</small>
-    </div>
     <button
       class="gantt-bar ${statusClass}"
       type="button"
       title="${escapeAttribute(`${item.title}｜${dateLabel}`)}"
       data-group="week"
       data-edit-item="${item.id}"
-      style="grid-column: ${schedule.start + 2} / span ${schedule.span};"
+      style="grid-column: ${schedule.start + 1} / span ${schedule.span};"
     >
       <span>${escapeHtml(item.title)}</span>
     </button>

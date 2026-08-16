@@ -699,14 +699,13 @@ h3 {
 .gantt-grid {
   position: relative;
   display: grid;
-  grid-template-columns: minmax(160px, 0.9fr) repeat(7, minmax(72px, 1fr));
+  grid-template-columns: repeat(7, minmax(120px, 1fr));
   gap: 8px;
-  min-width: 760px;
+  min-width: 900px;
   overflow: hidden;
 }
 
 .gantt-day,
-.gantt-task-label,
 .gantt-bar,
 .gantt-empty-row {
   min-height: 42px;
@@ -740,32 +739,6 @@ h3 {
 
 .gantt-day.is-today strong {
   color: var(--bg-solid);
-}
-
-.gantt-task-label {
-  display: grid;
-  align-content: center;
-  min-width: 0;
-  padding: 8px 10px;
-  border: 1px solid var(--line);
-  background: var(--bg-elevated);
-}
-
-.gantt-task-label span {
-  overflow: hidden;
-  color: var(--text);
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: 13px;
-  font-weight: 750;
-}
-
-.gantt-task-label small {
-  overflow: hidden;
-  color: var(--muted);
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: 12px;
 }
 
 .gantt-bar {
