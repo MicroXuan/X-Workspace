@@ -834,6 +834,10 @@ function creatorTemplate(item) {
 function taskEditTemplate(group, item) {
   if (group !== "week") return simpleItemEditTemplate(group, item, "每日任务");
 
+  const rangeLabel = item.startDate && item.endDate
+    ? `${formatDateString(item.startDate)} - ${formatDateString(item.endDate)}`
+    : "选择时间范围";
+
   return `
     <article class="item item-edit-row week-edit-row">
       <div class="item-edit-grid week-date-edit" data-item-edit-row="${group}:${item.id}">
@@ -841,14 +845,25 @@ function taskEditTemplate(group, item) {
           <span>每周任务</span>
           <input type="text" data-item-title value="${escapeAttribute(item.title)}" />
         </label>
-        <label>
-          <span>开始日期</span>
-          <input type="date" data-item-start value="${escapeAttribute(item.startDate || "")}" />
-        </label>
-        <label>
-          <span>结束日期</span>
-          <input type="date" data-item-end value="${escapeAttribute(item.endDate || "")}" />
-        </label>
+        <div class="date-range-field">
+          <span>时间范围</span>
+          <details class="date-range-picker">
+            <summary>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 2v4M16 2v4M3.5 9.5h17M5 5h14a1.5 1.5 0 0 1 1.5 1.5v12A1.5 1.5 0 0 1 19 20H5a1.5 1.5 0 0 1-1.5-1.5v-12A1.5 1.5 0 0 1 5 5Z" /></svg>
+              <strong>${escapeHtml(rangeLabel)}</strong>
+            </summary>
+            <div class="date-range-popover">
+              <label>
+                <span>开始</span>
+                <input type="date" data-item-start value="${escapeAttribute(item.startDate || "")}" />
+              </label>
+              <label>
+                <span>结束</span>
+                <input type="date" data-item-end value="${escapeAttribute(item.endDate || "")}" />
+              </label>
+            </div>
+          </details>
+        </div>
       </div>
       <button class="edit-button strong-edit" type="button" data-group="${group}" data-save-item="${item.id}" aria-label="保存修改">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6" /></svg>

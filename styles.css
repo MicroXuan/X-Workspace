@@ -1221,7 +1221,7 @@ h3 {
 }
 
 .week-date-edit {
-  grid-template-columns: minmax(0, 1.25fr) minmax(130px, 0.8fr) minmax(130px, 0.8fr);
+  grid-template-columns: minmax(0, 1.2fr) minmax(210px, 0.9fr);
 }
 
 .two-field-edit {
@@ -1246,6 +1246,91 @@ h3 {
   padding: 0 12px;
   background: var(--bg-solid);
   color: var(--text);
+}
+
+.date-range-field {
+  display: grid;
+  gap: 5px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.date-range-picker {
+  position: relative;
+}
+
+.date-range-picker summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 0 12px;
+  background: var(--bg-solid);
+  color: var(--text);
+  cursor: pointer;
+  list-style: none;
+  transition:
+    border-color var(--speed) ease,
+    box-shadow var(--speed) ease,
+    transform var(--speed) ease;
+}
+
+.date-range-picker summary::-webkit-details-marker {
+  display: none;
+}
+
+.date-range-picker summary:hover {
+  border-color: var(--text);
+  transform: translateY(-1px);
+}
+
+.date-range-picker summary:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.date-range-picker summary svg {
+  width: 18px;
+  height: 18px;
+  color: var(--muted);
+}
+
+.date-range-picker summary strong {
+  overflow: hidden;
+  min-width: 0;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 14px;
+  font-weight: 760;
+}
+
+.date-range-picker[open] summary {
+  border-color: var(--text);
+  box-shadow: 0 0 0 4px var(--accent-soft);
+}
+
+.date-range-popover {
+  position: absolute;
+  z-index: 4;
+  top: calc(100% + 8px);
+  right: 0;
+  display: grid;
+  width: min(360px, 82vw);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 10px;
+  background: var(--bg-elevated);
+  box-shadow: var(--shadow);
+}
+
+.date-range-popover label {
+  display: grid;
+  gap: 5px;
 }
 
 .check {
@@ -1566,6 +1651,13 @@ h3 {
   .summary-card {
     min-height: 108px;
   }
+
+  .date-range-popover {
+    position: static;
+    width: 100%;
+    margin-top: 8px;
+    box-shadow: none;
+  }
 }
 
 @media (max-width: 430px) {
@@ -1579,6 +1671,10 @@ h3 {
 
   .panel-actions {
     justify-content: stretch;
+  }
+
+  .date-range-popover {
+    grid-template-columns: 1fr;
   }
 
   .panel-actions .ghost-button {
