@@ -579,7 +579,11 @@ function renderNavigation() {
 }
 
 function renderTasks(group, container) {
-  const items = group === "today" ? getSortedTodayTasks() : activeList(group);
+  const items = group === "today"
+    ? getSortedTodayTasks()
+    : group === "week"
+      ? getSortedWeekTasks()
+      : activeList(group);
   container.innerHTML = items.length
     ? items.map((item) => taskTemplate(group, item)).join("")
     : emptyTemplate(group === "today" ? "今天还很干净。" : "本周任务等待安排。");
@@ -593,6 +597,17 @@ function getSortedTodayTasks() {
   };
 
   return activeList("today").sort((a, b) => rank(a) - rank(b) || b.createdAt - a.createdAt);
+}
+
+function getSortedWeekTasks() {
+  const fallbackTime = (item) => Number.isFinite(item.createdAt) ? item.createdAt : 0;
+  const dateValue = (value) => isDateString(value) ? parseLocalDate(value).getTime() : Infinity;
+
+  return activeList("week").sort((a, b) =>
+    dateValue(a.startDate) - dateValue(b.startDate) ||
+    dateValue(a.endDate) - dateValue(b.endDate) ||
+    fallbackTime(a) - fallbackTime(b)
+  );
 }
 
 function renderLinks() {
@@ -709,7 +724,7 @@ function dailyArchiveTemplate(archive) {
 function renderWeekGantt() {
   const range = getPlanningWeekRange();
   const days = getPlanningWeekDays();
-  const weekTasks = activeList("week");
+  const weekTasks = getSortedWeekTasks();
   const scheduledTasks = weekTasks
     .map((item) => ({ item, schedule: getWeekTaskSchedule(item, days) }))
     .filter((entry) => entry.schedule);
