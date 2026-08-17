@@ -20,12 +20,26 @@
     {
       "src": "api/data.js",
       "use": "@vercel/node"
+    },
+    {
+      "src": "api/daily-reminder.js",
+      "use": "@vercel/node"
+    }
+  ],
+  "crons": [
+    {
+      "path": "/api/daily-reminder",
+      "schedule": "30 4 * * *"
     }
   ],
   "routes": [
     {
       "src": "/api/data",
       "dest": "/api/data.js"
+    },
+    {
+      "src": "/api/daily-reminder",
+      "dest": "/api/daily-reminder.js"
     },
     {
       "src": "/styles.css",

@@ -3,6 +3,7 @@ const fsSync = require("node:fs");
 const fs = require("node:fs/promises");
 const path = require("node:path");
 const { createClient } = require("@supabase/supabase-js");
+const { runDailyReminder, verifyReminderRequest } = require("../lib/reminder");
 
 const rootDir = path.join(__dirname, "..");
 loadEnvFile(path.join(rootDir, ".env"));
@@ -30,6 +31,11 @@ const server = http.createServer(async (request, response) => {
 
     if (url.pathname === "/api/data") {
       await handleDataApi(request, response);
+      return;
+    }
+
+    if (url.pathname === "/api/daily-reminder") {
+      await handleDailyReminderApi(request, response, url);
       return;
     }
 
@@ -74,6 +80,23 @@ async function handleDataApi(request, response) {
   }
 
   sendJson(response, 405, { error: "Method not allowed" });
+}
+
+async function handleDailyReminderApi(request, response, url) {
+  if (request.method !== "GET" && request.method !== "POST") {
+    sendJson(response, 405, { error: "Method not allowed" });
+    return;
+  }
+
+  if (!verifyReminderRequest(request)) {
+    sendJson(response, 401, { error: "Unauthorized" });
+    return;
+  }
+
+  const result = await runDailyReminder({
+    dryRun: url.searchParams.get("dryRun") === "1"
+  });
+  sendJson(response, 200, result);
 }
 
 async function readPersistentData() {
