@@ -29,7 +29,7 @@
   "crons": [
     {
       "path": "/api/daily-reminder",
-      "schedule": "30 4 * * *"
+      "schedule": "30 6 * * *"
     }
   ],
   "routes": [
